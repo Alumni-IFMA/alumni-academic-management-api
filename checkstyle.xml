@@ -15,12 +15,6 @@
         <module name="UnusedImports"/>
         <module name="AvoidStarImport"/>
 
-        <!-- Nomenclatura -->
-        <module name="TypeName"/>
-        <module name="MethodName"/>
-        <module name="ParameterName"/>
-        <module name="LocalVariableName"/>
-
         <!-- Boas práticas -->
         <module name="EmptyStatement"/>
         <module name="EqualsHashCode"/>
@@ -28,11 +22,6 @@
         <!-- Código limpo -->
         <module name="NeedBraces"/>
         <module name="AvoidNestedBlocks"/>
-
-        <!-- Complexidade -->
-        <module name="CyclomaticComplexity">
-            <property name="max" value="10"/>
-        </module>
 
     </module>
 

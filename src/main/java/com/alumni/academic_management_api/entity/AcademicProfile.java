@@ -19,9 +19,6 @@ import lombok.ToString;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
-import java.time.LocalDate;
-import java.util.Date;
-
 @Entity
 @Table(name = "academic_profiles")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

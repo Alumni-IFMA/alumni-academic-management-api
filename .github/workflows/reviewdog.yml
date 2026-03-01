@@ -1,0 +1,40 @@
+name: Reviewdog Checkstyle
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  reviewdog:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Run Checkstyle
+        run: ./gradlew checkstyleMain
+
+      - name: Run Reviewdog
+        uses: reviewdog/action-reviewdog@v2
+        with:
+          reporter: github-pr-review
+          fail_on_error: true
+          level: warning
+          filter_mode: diff_context
+          name: Checkstyle
+          tool_name: checkstyle
+          input: build/reports/checkstyle/main.xml

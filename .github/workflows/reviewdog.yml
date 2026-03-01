@@ -44,4 +44,4 @@ jobs:
             -reporter=github-pr-review \
             -filter-mode=added \
             -level=warning \
-            -fail-on-error=true
+            -fail-level=error

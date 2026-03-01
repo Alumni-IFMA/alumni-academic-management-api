@@ -31,8 +31,6 @@ jobs:
         run: ./gradlew test
 
       - name: Run Checkstyle com Reviewdog
-        env:
-          REVIEWDOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew checkstyleMain checkstyleTest | reviewdog \
             -f=checkstyle \

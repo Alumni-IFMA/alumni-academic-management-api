@@ -33,7 +33,7 @@ jobs:
           reviewdog_version: latest
 
       - name: Run Tests
-        run: ./gradlew test
+        run: ./gradlew test -Pprofile=test
 
       - name: Run Checkstyle com Reviewdog
         env:

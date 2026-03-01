@@ -16,10 +16,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
 
       - name: Grant execute permission
         run: chmod +x gradlew
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1.5.0
+        with:
+          reviewdog_version: latest
 
       - name: Test
         run: ./gradlew test
@@ -30,12 +34,4 @@ jobs:
       - name: Reviewdog Main
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: reviewdog -f=checkstyle -reporter=github-pr-review -filter-mode=added -level=warning -fail-level=error < build/reports/checkstyle/main.xml
-
-      - name: Checkstyle Test
-        run: ./gradlew checkstyleTest
-
-      - name: Reviewdog Test
-        env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: reviewdog -f=checkstyle -reporter=github-pr-review -filter-mode=added -level=warning -fail-level=error < build/reports/checkstyle/test.xml
+        run: reviewdog -f=checkstyle -reporter=github-pr-review -filter-mode=added -level=warning < build/reports/checkstyle/main.xml

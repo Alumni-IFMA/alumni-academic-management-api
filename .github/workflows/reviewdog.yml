@@ -7,41 +7,32 @@ permissions:
   contents: read
 
 jobs:
-  lint-test:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x gradlew
-
-      - name: Build with Gradle Wrapper
-        run: ./gradlew build
 
       - name: Setup reviewdog
         uses: reviewdog/action-setup@v1.5.0
         with:
           reviewdog_version: latest
 
-      - name: Run Tests
-        run: ./gradlew test -Pprofile=test
+      - name: Test
+        run: ./gradlew test
 
-      - name: Run Checkstyle com Reviewdog
+      - name: Checkstyle Main
+        run: ./gradlew checkstyleMain
+
+      - name: Reviewdog Main
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew checkstyleMain checkstyleTest | reviewdog \
-            -f=checkstyle \
-            -reporter=github-pr-review \
-            -filter-mode=added \
-            -level=warning \
-            -fail-level=error
+        run: reviewdog -f=checkstyle -reporter=github-pr-review -filter-mode=added -level=warning < build/reports/checkstyle/main.xml

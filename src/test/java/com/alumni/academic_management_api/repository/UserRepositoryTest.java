@@ -29,7 +29,6 @@ class UserRepositoryTest {
                     .name("João Silva")
                     .cpf("12345678900")
                     .email("joao@email.com")
-                    .password("12345678")
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
 
@@ -39,7 +38,6 @@ class UserRepositoryTest {
             assertThat(user.getName()).isEqualTo(savedUser.getName());
             assertThat(user.getCpf()).isEqualTo(savedUser.getCpf());
             assertThat(user.getEmail()).isEqualTo(savedUser.getEmail());
-            assertThat(user.getPassword()).isEqualTo(savedUser.getPassword());
             assertThat(user.getAccountStatus()).isEqualTo(savedUser.getAccountStatus());
         }
 
@@ -48,7 +46,6 @@ class UserRepositoryTest {
             User user = User.builder()
                     .cpf("12345678900")
                     .email("email@email.com")
-                    .password("12345678")
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
 

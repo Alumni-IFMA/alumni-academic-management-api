@@ -21,8 +21,6 @@ public class RegisterRequestDTO implements Serializable {
 
     String email;
 
-    String password;
-
     Long campusCourseId;
 
     Integer entryYear;

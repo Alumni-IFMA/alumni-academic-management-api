@@ -30,4 +30,10 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @postMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBdy @valid LoginRequestDTO request) {
+        LoginResponseDTO response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
 }

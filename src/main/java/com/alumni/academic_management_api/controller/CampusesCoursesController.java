@@ -1,7 +1,6 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.campusescourses.CampusCourseResponseDTO;
-import com.alumni.academic_management_api.entity.CampusCourse;
 import com.alumni.academic_management_api.service.CampusesCourseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

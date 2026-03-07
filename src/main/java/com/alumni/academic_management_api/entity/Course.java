@@ -1,5 +1,6 @@
 package com.alumni.academic_management_api.entity;
 
+import com.alumni.academic_management_api.enums.Level;
 import com.alumni.academic_management_api.enums.Modality;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +40,11 @@ public class Course {
     @Column(name = "name", nullable = false)
     @ToString.Include
     private String name;
+
+    @Column(name = "level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @ToString.Include
+    private Level level;
 
     @Column(name = "modality", nullable = false)
     @Enumerated(EnumType.STRING)

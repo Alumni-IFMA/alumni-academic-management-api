@@ -1,4 +1,4 @@
-package com.alumini.academic_management_api.dto.auth;
+package com.alumni.academic_management_api.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -7,13 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.io.serializable;
+import java.io.Serializable;
 
 @Getter
 @Setter
-@AllArgsConstructor;
-@noArgsConstructor
-public clas LoginRequestDTO implements Serializable {
+@AllArgsConstructor
+@NoArgsConstructor
+public class LoginRequestDTO implements Serializable {
 
     @NotBlank
     @Email

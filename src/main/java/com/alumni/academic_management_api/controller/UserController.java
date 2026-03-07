@@ -3,6 +3,9 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
+import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
+import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
+import com.alumni.academic_management_api.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,8 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
-    public UserController(UserService userService) {this.userService = userService;
+    public UserController(UserService userService, AuthService authService) {
+        this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping("/register")
@@ -31,9 +37,11 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @postMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBdy @valid LoginRequestDTO request) {
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
+        log.debug("REST request to authenticate user");
         LoginResponseDTO response = authService.login(request);
         return ResponseEntity.ok(response);
     }
+
 }

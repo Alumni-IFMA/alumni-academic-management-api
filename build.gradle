@@ -55,7 +55,12 @@ test {
 	useJUnitPlatform()
 
 	if (!project.hasProperty("profile")) {
-		systemProperty "spring.profiles.active", "local"
+		systemProperty "spring.profiles.active", "test"
+		systemProperty "spring.datasource.url", "jdbc:h2:mem:testdb"
+		systemProperty "spring.datasource.username", "sa"
+		systemProperty "spring.datasource.password", ""
+		systemProperty "spring.jpa.database-platform", "org.hibernate.dialect.H2Dialect"
+		systemProperty "spring.jpa.hibernate.ddl-auto", "create-drop"
 	} else {
 		systemProperty "spring.profiles.active", project.getProperty("profile")
 	}
@@ -73,7 +78,6 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	implementation 'org.springframework.security:spring-security-crypto:7.0.2'
 
 	compileOnly 'org.projectlombok:lombok'
 

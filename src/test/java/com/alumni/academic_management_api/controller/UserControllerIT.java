@@ -35,7 +35,6 @@ class UserControllerIT {
                     .name("João Silva")
                     .cpf("12345678900")
                     .email("joao@gmail.com")
-                    .password("12345678")
                     .campusCourseId(1L)
                     .entryYear(2021)
                     .conclusionYear(2024)

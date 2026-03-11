@@ -2,6 +2,7 @@ package com.alumni.academic_management_api.entity;
 
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,9 +55,9 @@ public class User {
     private String email;
 
     @JsonIgnore
-    @NotNull
+    @Nullable
     @Size(min = 8)
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     @Column(name = "bio")

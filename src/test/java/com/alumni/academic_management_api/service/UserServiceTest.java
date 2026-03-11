@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,9 +26,6 @@ class UserServiceTest {
 
     @Mock
     private UserMapper userMapper;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
 
     @Mock
     private UserValidator userValidator;
@@ -45,7 +41,6 @@ class UserServiceTest {
                     "João",
                     "12345678900",
                     "joao@email.com",
-                    "12345678",
                     1L,
                     2021,
                     2024
@@ -70,9 +65,6 @@ class UserServiceTest {
             Mockito.when(userMapper.toEntity(request))
                     .thenReturn(user);
 
-            Mockito.when(passwordEncoder.encode("12345678"))
-                    .thenReturn("encryptedPassword");
-
             Mockito.when(userRepository.save(user))
                     .thenReturn(user);
 
@@ -81,13 +73,10 @@ class UserServiceTest {
 
             UserSimpleDTO result = userService.createUser(request);
 
-            Mockito.verify(passwordEncoder).encode("12345678");
-
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getName()).isEqualTo("João");
             assertThat(result.getEmail()).isEqualTo("joao@email.com");
-            assertThat(user.getPassword()).isEqualTo("encryptedPassword");
         }
 
         @Test
@@ -96,34 +85,12 @@ class UserServiceTest {
                     "João",
                     "12345678900",
                     "joao@email.com",
-                    "12345678",
                     1L,
                     2021,
                     2024
             );
 
             Mockito.doThrow(new BusinessException("User already exists"))
-                    .when(userValidator)
-                    .validateCreate(request);
-
-            assertThatThrownBy(() -> userService.createUser(request))
-                    .isInstanceOf(BusinessException.class);
-        }
-
-        @Test
-        void givenNullPassword_whenCreateUser_thenThrowException() {
-
-            RegisterRequestDTO request = new RegisterRequestDTO(
-                    "João",
-                    "12345678900",
-                    "joao@email.com",
-                    null,
-                    1L,
-                    2021,
-                    2024
-            );
-
-            Mockito.doThrow(new BusinessException("Password cannot be null"))
                     .when(userValidator)
                     .validateCreate(request);
 

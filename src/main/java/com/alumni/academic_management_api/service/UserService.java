@@ -36,9 +36,6 @@ public class UserService {
 
         user.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
 
-        String encryptedPassword = passwordEncoder.encode(requestDTO.getPassword());
-        user.setPassword(encryptedPassword);
-
         User savedUser = userRepository.save(user);
 
         return userMapper.toSimpleDTO(savedUser);

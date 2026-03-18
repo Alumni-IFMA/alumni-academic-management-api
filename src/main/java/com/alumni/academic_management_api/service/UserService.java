@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.UserListDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
@@ -9,6 +10,9 @@ import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.validation.UserValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -41,4 +45,10 @@ public class UserService {
         return userMapper.toSimpleDTO(savedUser);
     }
 
+    public List<UserListDTO> findAll() {
+
+        List<User> userList = userRepository.findAll();
+
+        return userMapper.toListDTO(userList);
+    }
 }

@@ -12,6 +12,6 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("Aqui será configurado a URL do seu Front-End")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"git status);
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD");
     }
 }

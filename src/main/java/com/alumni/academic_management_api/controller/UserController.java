@@ -1,7 +1,6 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
-import com.alumni.academic_management_api.dto.user.UserListDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
 import jakarta.validation.Valid;
@@ -36,10 +35,10 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<UserListDTO>> findAll() {
+    public ResponseEntity<List<UserSimpleDTO>> findAll() {
         log.debug("REST request to get all users");
 
-        List<UserListDTO> response = userService.findAll();
+        List<UserSimpleDTO> response = userService.findAll();
 
         return ResponseEntity.ok(response);
     }

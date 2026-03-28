@@ -1,7 +1,6 @@
 package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
-import com.alumni.academic_management_api.dto.user.UserListDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
@@ -44,10 +43,10 @@ public class UserService {
         return userMapper.toSimpleDTO(savedUser);
     }
 
-    public List<UserListDTO> findAll() {
+    public List<UserSimpleDTO> findAll() {
 
         List<User> userList = userRepository.findAll();
 
-        return userMapper.toListDTO(userList);
+        return userMapper.toSimpleDTOList(userList);
     }
 }

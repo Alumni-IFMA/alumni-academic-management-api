@@ -142,8 +142,9 @@ class UserServiceTest {
 
             List<UserSimpleDTO> result = userService.findAll();
 
-            assertThat(result).isNotNull();
-            assertThat(result).isEmpty();
+            assertThat(result)
+                .isNotNull()
+                .isEmpty();
         }
     }
 
@@ -166,7 +167,7 @@ class UserServiceTest {
                     1L,
                     "João",
                     "joao@email.com",
-                    AcademicProfile.builder().build(),
+                    List.of(),
                     AccountStatus.PENDING_VERIFICATION
             );
 

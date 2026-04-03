@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.service;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -14,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,12 +54,15 @@ class UserServiceTest {
                     .cpf("12345678900")
                     .email("email@email.com")
                     .password("12345678")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
                     .build();
 
             UserSimpleDTO response = new UserSimpleDTO(
                     1L,
                     "João",
-                    "joao@email.com"
+                    "joao@email.com",
+                    List.of(),
+                    AccountStatus.PENDING_VERIFICATION
             );
 
 
@@ -77,6 +83,45 @@ class UserServiceTest {
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getName()).isEqualTo("João");
             assertThat(result.getEmail()).isEqualTo("joao@email.com");
+        }
+
+        @Nested
+        class FindAll {
+            @Test
+            void givenUsersExist_whenFindAll_thenReturnList() {
+                User user = User.builder()
+                        .name("João")
+                        .email("joao@email.com")
+                        .build();
+
+                UserSimpleDTO dto = new UserSimpleDTO(
+                        1L,
+                        "João",
+                        "joao@email.com",
+                        List.of(),
+                        AccountStatus.PENDING_VERIFICATION
+                );
+
+                Mockito.when(userRepository.findAll()).thenReturn(List.of(user));
+                Mockito.when(userMapper.toSimpleDTOList(List.of(user))).thenReturn(List.of(dto));
+
+                List<UserSimpleDTO> result = userService.findAll();
+
+                assertThat(result).isNotNull();
+                assertThat(result).hasSize(1);
+                assertThat(result.get(0).getName()).isEqualTo("João");
+            }
+
+            @Test
+            void givenNoUsers_whenFindAll_thenReturnEmptyList() {
+                Mockito.when(userRepository.findAll()).thenReturn(List.of());
+                Mockito.when(userMapper.toSimpleDTOList(List.of())).thenReturn(List.of());
+
+                List<UserSimpleDTO> result = userService.findAll();
+
+                assertThat(result).isNotNull();
+                assertThat(result).isEmpty();
+            }
         }
 
         @Test

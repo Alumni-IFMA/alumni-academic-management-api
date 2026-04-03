@@ -11,8 +11,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -47,6 +49,19 @@ class UserControllerIT {
                     .andExpect(jsonPath("$.name").value("João Silva"))
                     .andExpect(jsonPath("$.email").value("joao@gmail.com"));
 
+        }
+    }
+
+    @Nested
+    class FindAll {
+
+        private static final String URL = "/auth/users";
+
+        @Test
+        void givenUsersExist_whenFindAll_thenReturn200WithList() throws Exception {
+            mockMvc.perform(get(URL))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray());
         }
     }
 

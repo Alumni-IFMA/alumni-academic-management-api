@@ -10,6 +10,8 @@ import com.alumni.academic_management_api.service.validation.UserValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
     private final UserRepository userRepository;
@@ -41,4 +43,10 @@ public class UserService {
         return userMapper.toSimpleDTO(savedUser);
     }
 
+    public List<UserSimpleDTO> findAll() {
+
+        List<User> userList = userRepository.findAll();
+
+        return userMapper.toSimpleDTOList(userList);
+    }
 }

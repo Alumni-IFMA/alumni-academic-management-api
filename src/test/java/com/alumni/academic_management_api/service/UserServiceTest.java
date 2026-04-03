@@ -143,8 +143,8 @@ class UserServiceTest {
             List<UserSimpleDTO> result = userService.findAll();
 
             assertThat(result)
-                .isNotNull()
-                .isEmpty();
+                    .isNotNull()
+                    .isEmpty();
         }
     }
 

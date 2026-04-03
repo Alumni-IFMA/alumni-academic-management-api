@@ -62,6 +62,19 @@ class UserControllerIT {
     }
 
     @Nested
+    class FindAll {
+
+        private static final String URL = "/auth/users";
+
+        @Test
+        void givenUsersExist_whenFindAll_thenReturn200WithList() throws Exception {
+            mockMvc.perform(get(URL))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray());
+        }
+    }
+
+    @Nested
     class FindUserById {
 
         private static final String URL = "/auth/users";

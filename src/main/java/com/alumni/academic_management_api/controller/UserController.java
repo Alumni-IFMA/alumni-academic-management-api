@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/auth")
@@ -32,6 +34,15 @@ public class UserController {
         UserSimpleDTO response = userService.createUser(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<UserSimpleDTO>> findAll() {
+        log.debug("REST request to get all users");
+
+        List<UserSimpleDTO> response = userService.findAll();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/users/{id}")

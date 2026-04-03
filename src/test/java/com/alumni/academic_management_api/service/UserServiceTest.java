@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,13 +57,14 @@ class UserServiceTest {
                     .cpf("12345678900")
                     .email("email@email.com")
                     .password("12345678")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
                     .build();
 
             UserSimpleDTO response = new UserSimpleDTO(
                     1L,
                     "João",
                     "joao@email.com",
-                    AcademicProfile.builder().build(),
+                    List.of(),
                     AccountStatus.PENDING_VERIFICATION
             );
 
@@ -105,6 +107,46 @@ class UserServiceTest {
                     .isInstanceOf(BusinessException.class);
         }
     }
+
+    @Nested
+    class FindAll {
+        @Test
+        void givenUsersExist_whenFindAll_thenReturnList() {
+            User user = User.builder()
+                    .name("João")
+                    .email("joao@email.com")
+                    .build();
+
+            UserSimpleDTO dto = new UserSimpleDTO(
+                    1L,
+                    "João",
+                    "joao@email.com",
+                    List.of(),
+                    AccountStatus.PENDING_VERIFICATION
+            );
+
+            Mockito.when(userRepository.findAll()).thenReturn(List.of(user));
+            Mockito.when(userMapper.toSimpleDTOList(List.of(user))).thenReturn(List.of(dto));
+
+            List<UserSimpleDTO> result = userService.findAll();
+
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("João");
+        }
+
+        @Test
+        void givenNoUsers_whenFindAll_thenReturnEmptyList() {
+            Mockito.when(userRepository.findAll()).thenReturn(List.of());
+            Mockito.when(userMapper.toSimpleDTOList(List.of())).thenReturn(List.of());
+
+            List<UserSimpleDTO> result = userService.findAll();
+
+            assertThat(result).isNotNull();
+            assertThat(result).isEmpty();
+        }
+    }
+
 
     @Nested
     class FindById {

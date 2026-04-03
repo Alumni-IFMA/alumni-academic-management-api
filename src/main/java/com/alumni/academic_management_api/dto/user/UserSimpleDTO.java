@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Getter
 @Builder
@@ -21,7 +22,8 @@ public class UserSimpleDTO implements Serializable {
 
     String email;
 
-    AcademicProfile academicProfile;
+    List<AcademicProfile> academicProfiles;
 
-    AccountStatus accountStatus;
+    AccountStatus status;
+
 }

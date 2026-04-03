@@ -11,6 +11,8 @@ import com.alumni.academic_management_api.service.validation.UserValidator;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Transactional
 @Service
 public class UserService {
@@ -40,6 +42,13 @@ public class UserService {
         return userMapper.toSimpleDTO(savedUser);
     }
 
+    public List<UserSimpleDTO> findAll() {
+
+        List<User> userList = userRepository.findAll();
+
+        return userMapper.toSimpleDTOList(userList);
+    }
+
     public UserSimpleDTO findUserById(Long id) {
 
         User user = userRepository.findById(id)
@@ -47,5 +56,4 @@ public class UserService {
 
         return userMapper.toSimpleDTO(user);
     }
-
 }

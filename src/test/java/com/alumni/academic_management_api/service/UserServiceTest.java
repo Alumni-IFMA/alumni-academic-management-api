@@ -4,6 +4,7 @@ import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -62,9 +63,9 @@ class UserServiceTest {
                     "João",
                     "joao@email.com",
                     List.of(),
-                    AccountStatus.PENDING_VERIFICATION
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
             );
-
 
             Mockito.doNothing().when(userValidator).validateCreate(request);
 
@@ -83,45 +84,7 @@ class UserServiceTest {
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getName()).isEqualTo("João");
             assertThat(result.getEmail()).isEqualTo("joao@email.com");
-        }
-
-        @Nested
-        class FindAll {
-            @Test
-            void givenUsersExist_whenFindAll_thenReturnList() {
-                User user = User.builder()
-                        .name("João")
-                        .email("joao@email.com")
-                        .build();
-
-                UserSimpleDTO dto = new UserSimpleDTO(
-                        1L,
-                        "João",
-                        "joao@email.com",
-                        List.of(),
-                        AccountStatus.PENDING_VERIFICATION
-                );
-
-                Mockito.when(userRepository.findAll()).thenReturn(List.of(user));
-                Mockito.when(userMapper.toSimpleDTOList(List.of(user))).thenReturn(List.of(dto));
-
-                List<UserSimpleDTO> result = userService.findAll();
-
-                assertThat(result).isNotNull();
-                assertThat(result).hasSize(1);
-                assertThat(result.get(0).getName()).isEqualTo("João");
-            }
-
-            @Test
-            void givenNoUsers_whenFindAll_thenReturnEmptyList() {
-                Mockito.when(userRepository.findAll()).thenReturn(List.of());
-                Mockito.when(userMapper.toSimpleDTOList(List.of())).thenReturn(List.of());
-
-                List<UserSimpleDTO> result = userService.findAll();
-
-                assertThat(result).isNotNull();
-                assertThat(result).isEmpty();
-            }
+            assertThat(result.getRole()).isEqualTo(Role.ALUMNI);
         }
 
         @Test
@@ -141,6 +104,46 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.createUser(request))
                     .isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Nested
+    class FindAll {
+        @Test
+        void givenUsersExist_whenFindAll_thenReturnList() {
+            User user = User.builder()
+                    .name("João")
+                    .email("joao@email.com")
+                    .build();
+
+            UserSimpleDTO dto = new UserSimpleDTO(
+                    1L,
+                    "João",
+                    "joao@email.com",
+                    List.of(),
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
+            );
+
+            Mockito.when(userRepository.findAll()).thenReturn(List.of(user));
+            Mockito.when(userMapper.toSimpleDTOList(List.of(user))).thenReturn(List.of(dto));
+
+            List<UserSimpleDTO> result = userService.findAll();
+
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("João");
+        }
+
+        @Test
+        void givenNoUsers_whenFindAll_thenReturnEmptyList() {
+            Mockito.when(userRepository.findAll()).thenReturn(List.of());
+            Mockito.when(userMapper.toSimpleDTOList(List.of())).thenReturn(List.of());
+
+            List<UserSimpleDTO> result = userService.findAll();
+
+            assertThat(result).isNotNull();
+            assertThat(result).isEmpty();
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.entity;
 
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -23,6 +24,7 @@ import lombok.ToString;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -87,8 +89,14 @@ public class User {
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user")
-    private List<AcademicProfile> academicProfiles;
+    private List<AcademicProfile> academicProfiles = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ToString.Include
+    private Role role;
 
     @Override
     public boolean equals(Object o) {

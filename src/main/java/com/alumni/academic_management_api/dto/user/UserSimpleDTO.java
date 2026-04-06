@@ -25,5 +25,5 @@ public class UserSimpleDTO implements Serializable {
     List<AcademicProfile> academicProfiles;
 
     AccountStatus status;
-    
+
 }

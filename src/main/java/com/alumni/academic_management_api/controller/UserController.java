@@ -24,7 +24,8 @@ public class UserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService) {this.userService = userService;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping("/register")
@@ -50,6 +51,15 @@ public class UserController {
         log.debug("REST request to get user profile: {}", id);
 
         UserProfileResponseDTO response = userService.getUserProfile(id);
+      
+        return ResponseEntity.ok(response);
+    }
+  
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserSimpleDTO> getUserById(@PathVariable Long id) {
+        log.debug("REST request to get user by id: {}", id);
+
+        UserSimpleDTO response = userService.findUserById(id);
 
         return ResponseEntity.ok(response);
     }

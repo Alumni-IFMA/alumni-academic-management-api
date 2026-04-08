@@ -112,6 +112,7 @@ class UserControllerIT {
         }
     }
 
+    @Nested
     class FindUserById {
 
         private static final String URL = "/auth/users";

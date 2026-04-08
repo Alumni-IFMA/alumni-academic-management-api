@@ -6,6 +6,7 @@ import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.validation.UserValidator;
@@ -18,6 +19,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -142,8 +144,64 @@ class UserServiceTest {
 
             List<UserSimpleDTO> result = userService.findAll();
 
+            assertThat(result)
+                    .isNotNull()
+                    .isEmpty();
+        }
+    }
+
+
+    @Nested
+    class FindById {
+        @Test
+        void givenValidRequest_whenFindById_thenReturnUser() {
+
+            Long userId = 1L;
+
+            User user = User.builder()
+                    .name("João")
+                    .cpf("12345678900")
+                    .email("email@email.com")
+                    .password("12345678")
+                    .build();
+
+            UserSimpleDTO response = new UserSimpleDTO(
+                    1L,
+                    "João",
+                    "joao@email.com",
+                    List.of(),
+                    AccountStatus.PENDING_VERIFICATION
+            );
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            Mockito.when(userMapper.toSimpleDTO(user)).thenReturn(response);
+
+            UserSimpleDTO result = userService.findUserById(userId);
+
             assertThat(result).isNotNull();
-            assertThat(result).isEmpty();
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getName()).isEqualTo("João");
+            assertThat(result.getEmail()).isEqualTo("joao@email.com");
+
+            Mockito.verify(userRepository).findById(userId);
+            Mockito.verify(userMapper).toSimpleDTO(user);
+        }
+
+
+        @Test
+        void givenNonExistingUser_whenFindById_thenThrowException() {
+
+            Long userId = 1L;
+
+            Mockito.when(userRepository.findById(userId))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.findUserById(userId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("User not found");
+
+            Mockito.verify(userRepository).findById(userId);
+            Mockito.verify(userMapper, Mockito.never()).toSimpleDTO(Mockito.any());
         }
     }
 }

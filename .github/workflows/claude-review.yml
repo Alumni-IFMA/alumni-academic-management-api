@@ -8,6 +8,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: read
+  id-token: write
 
 jobs:
   review:
@@ -24,5 +25,3 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: "claude-sonnet-4-20250514"
-          review_type: "pull_request"

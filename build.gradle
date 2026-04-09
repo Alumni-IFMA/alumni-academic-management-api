@@ -55,10 +55,18 @@ test {
 	useJUnitPlatform()
 
 	if (!project.hasProperty("profile")) {
-		systemProperty "spring.profiles.active", "local"
+		systemProperty "spring.profiles.active", "test"
 	} else {
 		systemProperty "spring.profiles.active", project.getProperty("profile")
 	}
+
+	systemProperty "spring.config.import", ""
+	systemProperty "spring.datasource.url", "jdbc:h2:mem:testdb"
+	systemProperty "spring.datasource.username", "sa"
+	systemProperty "spring.datasource.password", ""
+	systemProperty "spring.datasource.driver-class-name", "org.h2.Driver"
+	systemProperty "security.jwt.secret", "test-secret-key-with-at-least-32-characters"
+	systemProperty "security.jwt.expiration-ms", "3600000"
 }
 
 check.dependsOn jacocoTestReport
@@ -67,11 +75,12 @@ check.dependsOn checkstyleMain
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	implementation 'org.springframework.security:spring-security-crypto:7.0.2'
 	implementation 'org.flywaydb:flyway-core:11.20.3'
 	implementation 'org.flywaydb:flyway-database-postgresql:11.20.3'
 
@@ -79,6 +88,8 @@ dependencies {
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	annotationProcessor 'org.projectlombok:lombok'

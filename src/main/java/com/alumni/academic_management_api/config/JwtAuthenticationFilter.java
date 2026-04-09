@@ -1,7 +1,5 @@
 package com.alumni.academic_management_api.config;
 
-import com.alumni.academic_management_api.entity.User;
-import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,23 +9,22 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserRepository userRepository;
+    private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
         this.jwtService = jwtService;
-        this.userRepository = userRepository;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -52,20 +49,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     && SecurityContextHolder.getContext().getAuthentication() == null
                     && jwtService.isTokenValid(token)) {
 
-                User user = userRepository.findByEmail(email)
-                        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-                UserDetails userDetails = org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail())
-                        .password(user.getPassword())
-                        .authorities(Collections.emptyList())
-                        .build();
+                UserDetails user = userDetailsService.loadUserByUsername(email);
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                user,
                                 null,
-                                userDetails.getAuthorities());
+                                user.getAuthorities());
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);

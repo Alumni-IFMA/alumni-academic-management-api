@@ -4,5 +4,6 @@ public enum Modality {
     INTEGRADO,
     CONCOMITANTE,
     SUBSEQUENTE,
-    GRADUACAO,
+    BACHARELADO,
+    LICENCIATURA
 }

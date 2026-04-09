@@ -3,17 +3,18 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
-import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
-import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
-import com.alumni.academic_management_api.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -21,11 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
-    private final AuthService authService;
 
-    public UserController(UserService userService, AuthService authService) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.authService = authService;
     }
 
     @PostMapping("/register")
@@ -37,11 +36,21 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
-        log.debug("REST request to authenticate user");
-        LoginResponseDTO response = authService.login(request);
+    @GetMapping("/users")
+    public ResponseEntity<List<UserSimpleDTO>> findAll() {
+        log.debug("REST request to get all users");
+
+        List<UserSimpleDTO> response = userService.findAll();
+
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserSimpleDTO> getUserById(@PathVariable Long id) {
+        log.debug("REST request to get user by id: {}", id);
+
+        UserSimpleDTO response = userService.findUserById(id);
+
+        return ResponseEntity.ok(response);
+    }
 }

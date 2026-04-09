@@ -1,7 +1,11 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,12 +14,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class UserControllerIT {
 
     @Autowired
@@ -23,6 +31,9 @@ class UserControllerIT {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Nested
     class createUser {
@@ -35,20 +46,62 @@ class UserControllerIT {
                     .name("João Silva")
                     .cpf("12345678900")
                     .email("joao@gmail.com")
-                    .password("12345678")
                     .campusCourseId(1L)
                     .entryYear(2021)
                     .conclusionYear(2024)
                     .build();
 
             mockMvc.perform(post(URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(requestDTO)))
-                .andExpect(status().isCreated())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("João Silva"))
                     .andExpect(jsonPath("$.email").value("joao@gmail.com"));
 
         }
     }
 
+    @Nested
+    class FindAll {
+
+        private static final String URL = "/auth/users";
+
+        @Test
+        void givenUsersExist_whenFindAll_thenReturn200WithList() throws Exception {
+            mockMvc.perform(get(URL))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray());
+        }
+    }
+
+    @Nested
+    class FindUserById {
+
+        private static final String URL = "/auth/users";
+
+
+        @Test
+        void givenValidUserRequest_whenFindById_thenReturnUser() throws Exception {
+            User user = User.builder()
+                    .name("João Silva")
+                    .email("joao@gmail.com")
+                    .cpf("12345678900")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .build();
+
+            User savedUser = userRepository.save(user);
+
+            mockMvc.perform(get(URL + "/" + savedUser.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("João Silva"))
+                    .andExpect(jsonPath("$.email").value("joao@gmail.com"));
+        }
+
+        @Test
+        void givenInvalidUserRequest_whenFindById_thenReturnNotFound() throws Exception {
+            mockMvc.perform(get("/auth/users/{id}", 999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string(containsString("User not found")));
+        }
+    }
 }

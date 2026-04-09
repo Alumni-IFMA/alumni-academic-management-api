@@ -17,7 +17,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
-@Table(name = "campus")
+@Table(name = "campuses")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @ToString(onlyExplicitlyIncluded = true)
 @AllArgsConstructor

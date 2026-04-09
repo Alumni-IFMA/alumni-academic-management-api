@@ -2,6 +2,7 @@ package com.alumni.academic_management_api.entity;
 
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,7 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,6 +22,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -54,9 +57,9 @@ public class User {
     private String email;
 
     @JsonIgnore
-    @NotNull
+    @Nullable
     @Size(min = 8)
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     @Column(name = "bio")
@@ -84,8 +87,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
 
-    @ManyToOne
-    private AcademicProfile academicProfile;
+    @OneToMany(mappedBy = "user")
+    private List<AcademicProfile> academicProfiles;
 
     @Override
     public boolean equals(Object o) {

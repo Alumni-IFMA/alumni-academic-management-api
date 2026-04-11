@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Service
+@Slf4j
 public class JwtService {
 
     private final String secret;
@@ -45,6 +47,7 @@ public class JwtService {
         try {
             return extractAllClaims(token).getExpiration().after(new Date());
         } catch (Exception ex) {
+            log.warn("Failed to validate JWT token", ex);
             return false;
         }
     }

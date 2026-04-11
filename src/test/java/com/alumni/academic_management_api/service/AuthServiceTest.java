@@ -38,17 +38,18 @@ class AuthServiceTest {
     class Login {
         @Test
         void givenValidCredentials_whenLogin_thenReturnToken() {
-            LoginRequestDTO request = new LoginRequestDTO("user@email.com", "12345678");
+            String email = "user@email.com";
+            LoginRequestDTO request = new LoginRequestDTO(email, "12345678");
             User user = User.builder()
-                    .email("user@email.com")
+                    .email(email)
                     .password("encrypted")
                     .build();
 
-            Mockito.when(userRepository.findByEmail("user@email.com"))
+            Mockito.when(userRepository.findByEmail(email))
                     .thenReturn(Optional.of(user));
             Mockito.when(passwordEncoder.matches("12345678", "encrypted"))
                     .thenReturn(true);
-            Mockito.when(jwtService.generateToken("user@email.com"))
+            Mockito.when(jwtService.generateToken(email))
                     .thenReturn("jwt-token");
 
             LoginResponseDTO response = authService.login(request);
@@ -71,13 +72,14 @@ class AuthServiceTest {
 
         @Test
         void givenInvalidPassword_whenLogin_thenThrowBusinessException() {
-            LoginRequestDTO request = new LoginRequestDTO("user@email.com", "wrong-pass");
+            String email = "user@email.com";
+            LoginRequestDTO request = new LoginRequestDTO(email, "wrong-pass");
             User user = User.builder()
-                    .email("user@email.com")
+                    .email(email)
                     .password("encrypted")
                     .build();
 
-            Mockito.when(userRepository.findByEmail("user@email.com"))
+            Mockito.when(userRepository.findByEmail(email))
                     .thenReturn(Optional.of(user));
             Mockito.when(passwordEncoder.matches("wrong-pass", "encrypted"))
                     .thenReturn(false);

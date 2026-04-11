@@ -25,6 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerIT {
 
     private static final String URL = "/auth/login";
+    private static final String USER_NAME = "Joao Silva";
+    private static final String USER_EMAIL = "joao@email.com";
+    private static final String VALID_PASSWORD = "12345678";
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid email or password";
 
     @Autowired
     private MockMvc mockMvc;
@@ -49,15 +53,15 @@ class AuthControllerIT {
         @Test
         void givenValidCredentials_whenLogin_thenReturnToken() throws Exception {
             User user = User.builder()
-                    .name("Joao Silva")
+                    .name(USER_NAME)
                     .cpf("11111111111")
-                    .email("joao@email.com")
-                    .password(passwordEncoder.encode("12345678"))
+                    .email(USER_EMAIL)
+                    .password(passwordEncoder.encode(VALID_PASSWORD))
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
             userRepository.save(user);
 
-            LoginRequestDTO request = new LoginRequestDTO("joao@email.com", "12345678");
+            LoginRequestDTO request = new LoginRequestDTO(USER_EMAIL, VALID_PASSWORD);
 
             mockMvc.perform(post(URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -69,32 +73,32 @@ class AuthControllerIT {
         @Test
         void givenInvalidPassword_whenLogin_thenReturnBadRequest() throws Exception {
             User user = User.builder()
-                    .name("Joao Silva")
+                    .name(USER_NAME)
                     .cpf("22222222222")
-                    .email("joao@email.com")
-                    .password(passwordEncoder.encode("12345678"))
+                    .email(USER_EMAIL)
+                    .password(passwordEncoder.encode(VALID_PASSWORD))
                     .accountStatus(AccountStatus.ACTIVE)
                     .build();
             userRepository.save(user);
 
-            LoginRequestDTO request = new LoginRequestDTO("joao@email.com", "wrong-password");
+            LoginRequestDTO request = new LoginRequestDTO(USER_EMAIL, "wrong-password");
 
             mockMvc.perform(post(URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(content().string("Invalid email or password"));
+                    .andExpect(content().string(INVALID_CREDENTIALS_MESSAGE));
         }
 
         @Test
         void givenEmailNotFound_whenLogin_thenReturnBadRequest() throws Exception {
-            LoginRequestDTO request = new LoginRequestDTO("notfound@email.com", "12345678");
+            LoginRequestDTO request = new LoginRequestDTO("notfound@email.com", VALID_PASSWORD);
 
             mockMvc.perform(post(URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(content().string("Invalid email or password"));
+                    .andExpect(content().string(INVALID_CREDENTIALS_MESSAGE));
         }
     }
 }

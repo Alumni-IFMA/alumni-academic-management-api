@@ -170,7 +170,8 @@ class UserServiceTest {
                     "João",
                     "joao@email.com",
                     List.of(),
-                    AccountStatus.PENDING_VERIFICATION
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
             );
 
             Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));

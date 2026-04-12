@@ -5,6 +5,7 @@ import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -37,6 +38,7 @@ public class UserService {
         User user = userMapper.toEntity(requestDTO);
 
         user.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
+        user.setRole(Role.ALUMNI);
 
         User savedUser = userRepository.save(user);
 
@@ -56,7 +58,7 @@ public class UserService {
 
         return userMapper.toProfileDTO(user);
     }
-    
+
     public UserSimpleDTO findUserById(Long id) {
 
         User user = userRepository.findById(id)

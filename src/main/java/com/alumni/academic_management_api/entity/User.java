@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.entity;
 
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -86,6 +87,11 @@ public class User {
     @ToString.Include
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ToString.Include
+    private Role role;
 
     @OneToMany(mappedBy = "user")
     private List<AcademicProfile> academicProfiles;

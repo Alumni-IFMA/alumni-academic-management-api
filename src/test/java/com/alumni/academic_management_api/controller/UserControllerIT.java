@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -125,6 +126,7 @@ class UserControllerIT {
                     .email("joao@gmail.com")
                     .cpf("12345678900")
                     .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
                     .build();
 
             User savedUser = userRepository.save(user);

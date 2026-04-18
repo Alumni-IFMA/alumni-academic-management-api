@@ -88,10 +88,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @ToString.Include
-    private Role role;
+    private Role role = Role.ALUMNI;
 
     @OneToMany(mappedBy = "user")
     private List<AcademicProfile> academicProfiles;

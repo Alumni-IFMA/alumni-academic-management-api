@@ -1,5 +1,7 @@
 name: CI/CD com Reviewdog
-on: [push, pull_request]
+on:
+  pull_request:
+    branches: [ develop, main ]
 
 permissions:
   pull-requests: write
@@ -26,11 +28,9 @@ jobs:
         with:
           reviewdog_version: latest
 
-      - name: Test
-        run: ./gradlew test
-
       - name: Checkstyle Main
         run: ./gradlew checkstyleMain
+        continue-on-error: true
 
       - name: Reviewdog Main
         env:

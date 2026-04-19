@@ -1,5 +1,6 @@
 package com.alumni.academic_management_api.service;
 
+import com.alumni.academic_management_api.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -27,12 +28,13 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, Role role) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(expiration)
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
@@ -41,6 +43,11 @@ public class JwtService {
 
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    public Role extractRole(String token) {
+        String roleName = extractAllClaims(token).get("role", String.class);
+        return Role.valueOf(roleName);
     }
 
     public boolean isTokenValid(String token) {

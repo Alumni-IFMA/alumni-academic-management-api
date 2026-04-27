@@ -22,7 +22,7 @@ public class CampusesCourseService {
         this.campusCourseMapper = campusCourseMapper;
     }
 
-    public List<CampusCourseResponseDTO> getALlCampusesCourse() {
+    public List<CampusCourseResponseDTO> getAllCampusesCourse() {
         List<CampusCourse> campusCourses = campusesCourseRepository.findAll();
         
         return campusCourseMapper.toDTOList(campusCourses);

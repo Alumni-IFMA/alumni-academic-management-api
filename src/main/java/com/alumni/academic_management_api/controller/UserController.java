@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
 import jakarta.validation.Valid;
@@ -45,6 +46,15 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/users/{id}/profile")
+    public ResponseEntity<UserProfileResponseDTO> getUserProfile(@PathVariable Long id) {
+        log.debug("REST request to get user profile: {}", id);
+
+        UserProfileResponseDTO response = userService.getUserProfile(id);
+      
+        return ResponseEntity.ok(response);
+    }
+  
     @GetMapping("/users/{id}")
     public ResponseEntity<UserSimpleDTO> getUserById(@PathVariable Long id) {
         log.debug("REST request to get user by id: {}", id);

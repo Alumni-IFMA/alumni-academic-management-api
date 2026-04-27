@@ -90,6 +90,11 @@ public class User {
     private AccountStatus accountStatus;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @ToString.Include
+    private Role role = Role.ALUMNI;
+
     @OneToMany(mappedBy = "user")
     private List<AcademicProfile> academicProfiles = new ArrayList<>();
 

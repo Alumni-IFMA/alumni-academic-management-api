@@ -90,14 +90,14 @@ public class User {
     private AccountStatus accountStatus;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user")
-    private List<AcademicProfile> academicProfiles = new ArrayList<>();
-
-    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @ToString.Include
     private Role role = Role.ALUMNI;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<AcademicProfile> academicProfiles = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {

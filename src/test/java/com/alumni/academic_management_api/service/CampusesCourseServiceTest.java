@@ -45,7 +45,7 @@ class CampusesCourseServiceTest {
 
             Mockito.when(campusCourseMapper.toDTOList(campusCourses)).thenReturn(List.of(campusCourseResponseDTO));
 
-            CampusCourseResponseDTO responseDTO = campusesCourseService.getALlCampusesCourse().get(0);
+            CampusCourseResponseDTO responseDTO = campusesCourseService.getAllCampusesCourse().get(0);
 
             assertThat(responseDTO).isEqualTo(campusCourseResponseDTO);
         }
@@ -56,7 +56,7 @@ class CampusesCourseServiceTest {
 
             Mockito.when(campusCourseMapper.toDTOList(List.of())).thenReturn(List.of());
 
-            CampusCourseResponseDTO responseDTO = campusesCourseService.getALlCampusesCourse()
+            CampusCourseResponseDTO responseDTO = campusesCourseService.getAllCampusesCourse()
                     .stream().findFirst().orElse(null);
 
             assertThat(responseDTO).isNull();

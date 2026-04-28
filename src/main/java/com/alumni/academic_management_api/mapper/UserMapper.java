@@ -16,6 +16,7 @@ public interface UserMapper {
 
     User toEntity(RegisterRequestDTO dto);
 
+    @Mapping(source = "accountStatus", target = "status")
     UserSimpleDTO toSimpleDTO(User user);
 
     List<UserSimpleDTO> toSimpleDTOList(List<User> user);

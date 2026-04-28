@@ -24,6 +24,7 @@ import lombok.ToString;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -94,8 +95,9 @@ public class User {
     @ToString.Include
     private Role role = Role.ALUMNI;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user")
-    private List<AcademicProfile> academicProfiles;
+    private List<AcademicProfile> academicProfiles = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {

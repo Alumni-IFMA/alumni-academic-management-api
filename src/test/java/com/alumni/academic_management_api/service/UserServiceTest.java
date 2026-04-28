@@ -4,6 +4,7 @@ import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
@@ -64,7 +65,8 @@ class UserServiceTest {
                     "João",
                     "joao@email.com",
                     List.of(),
-                    AccountStatus.PENDING_VERIFICATION
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
             );
 
             Mockito.doNothing().when(userValidator).validateCreate(request);
@@ -84,6 +86,7 @@ class UserServiceTest {
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getName()).isEqualTo("João");
             assertThat(result.getEmail()).isEqualTo("joao@email.com");
+            assertThat(result.getRole()).isEqualTo(Role.ALUMNI);
         }
 
         @Test
@@ -120,7 +123,8 @@ class UserServiceTest {
                     "João",
                     "joao@email.com",
                     List.of(),
-                    AccountStatus.PENDING_VERIFICATION
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
             );
 
             Mockito.when(userRepository.findAll()).thenReturn(List.of(user));
@@ -163,7 +167,8 @@ class UserServiceTest {
                     "João",
                     "joao@email.com",
                     List.of(),
-                    AccountStatus.PENDING_VERIFICATION
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ALUMNI
             );
 
             Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));

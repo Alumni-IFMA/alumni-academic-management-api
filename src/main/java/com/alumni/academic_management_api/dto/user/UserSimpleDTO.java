@@ -2,6 +2,7 @@ package com.alumni.academic_management_api.dto.user;
 
 import com.alumni.academic_management_api.entity.AcademicProfile;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,4 +27,5 @@ public class UserSimpleDTO implements Serializable {
 
     AccountStatus status;
 
+    Role role;
 }

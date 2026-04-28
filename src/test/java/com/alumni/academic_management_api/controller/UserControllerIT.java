@@ -57,7 +57,8 @@ class UserControllerIT {
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("João Silva"))
-                    .andExpect(jsonPath("$.email").value("joao@gmail.com"));
+                    .andExpect(jsonPath("$.email").value("joao@gmail.com"))
+                    .andExpect(jsonPath("$.role").value("ALUMNI"));
 
         }
     }

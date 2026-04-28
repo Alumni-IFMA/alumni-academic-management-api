@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
+import com.alumni.academic_management_api.dto.user.UpdateRoleRequestDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
@@ -16,7 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -127,6 +130,87 @@ class RoleBasedSecurityIT {
             mockMvc.perform(get("/auth/users/{id}", user.getId())
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
+        }
+    }
+
+    @Nested
+    class UpdateUserRole {
+
+        private static final String URL = "/auth/users/{id}/role";
+
+        @Test
+        void givenAdminToken_whenUpdateOtherUserRole_thenReturn200AndRoleChanged() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "44444444441");
+
+            User target = userRepository.save(User.builder()
+                    .name("Target User")
+                    .cpf("55555555555")
+                    .email("target@test.com")
+                    .password(passwordEncoder.encode(PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(patch(URL, target.getId())
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UpdateRoleRequestDTO(Role.ADMIN))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.role").value("ADMIN"));
+
+            User updatedUser = userRepository.findById(target.getId()).orElseThrow();
+            assertThat(updatedUser.getRole()).isEqualTo(Role.ADMIN);
+        }
+
+        @Test
+        void givenAdminToken_whenUpdateOwnRole_thenReturn400() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "44444444442");
+            Long adminId = userRepository.findByEmail("admin@test.com").orElseThrow().getId();
+
+            mockMvc.perform(patch(URL, adminId)
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UpdateRoleRequestDTO(Role.ALUMNI))))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void givenAlumniToken_whenUpdateRole_thenReturn403() throws Exception {
+            String alumniToken = loginAndGetToken("alumni@test.com", Role.ALUMNI, "66666666666");
+
+            User target = userRepository.save(User.builder()
+                    .name("Target User")
+                    .cpf("77777777777")
+                    .email("target2@test.com")
+                    .password(passwordEncoder.encode(PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(patch(URL, target.getId())
+                            .header("Authorization", "Bearer " + alumniToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UpdateRoleRequestDTO(Role.ADMIN))))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void givenNoToken_whenUpdateRole_thenReturn401() throws Exception {
+            mockMvc.perform(patch(URL, 1L)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UpdateRoleRequestDTO(Role.ADMIN))))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void givenAdminToken_whenUpdateNonExistentUser_thenReturn404() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "44444444443");
+
+            mockMvc.perform(patch(URL, 999999L)
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new UpdateRoleRequestDTO(Role.ADMIN))))
+                    .andExpect(status().isNotFound());
         }
     }
 }

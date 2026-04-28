@@ -95,14 +95,9 @@ public class User {
     @ToString.Include
     private Role role = Role.ALUMNI;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user")
     private List<AcademicProfile> academicProfiles = new ArrayList<>();
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @ToString.Include
-    private Role role = Role.ALUMNI;
 
     @Override
     public boolean equals(Object o) {

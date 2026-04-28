@@ -84,6 +84,7 @@ class UserControllerIT {
         private static final String URL = "/auth/users/{id}/profile";
 
         @Test
+        @WithMockUser
         void givenExistingUser_whenGetProfile_thenReturn200WithProfileData() throws Exception {
             RegisterRequestDTO requestDTO = RegisterRequestDTO.builder()
                     .name("Maria Silva")
@@ -110,6 +111,7 @@ class UserControllerIT {
         }
 
         @Test
+        @WithMockUser
         void givenNonExistingUser_whenGetProfile_thenReturn404() throws Exception {
             mockMvc.perform(get(URL, 999999L))
                     .andExpect(status().isNotFound());

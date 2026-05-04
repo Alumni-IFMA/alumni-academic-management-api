@@ -1,6 +1,6 @@
 package com.alumni.academic_management_api.dto.user;
 
-import com.alumni.academic_management_api.entity.AcademicProfile;
+import com.alumni.academic_management_api.dto.academicprofile.AcademicProfileSimpleDTO;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +22,8 @@ public class UserSimpleDTO implements Serializable {
 
     String email;
 
-    List<AcademicProfile> academicProfiles;
+    List<AcademicProfileSimpleDTO> academicProfiles;
 
-    AccountStatus status;
+    AccountStatus accountStatus;
 
 }

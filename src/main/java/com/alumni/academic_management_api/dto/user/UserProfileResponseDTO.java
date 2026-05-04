@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserSimpleDTO implements Serializable {
+public class UserProfileResponseDTO implements Serializable {
 
     Long id;
 
@@ -22,9 +22,19 @@ public class UserSimpleDTO implements Serializable {
 
     String email;
 
-    List<AcademicProfileResponseDTO> academicProfiles;
+    String bio;
 
-    AccountStatus status;
+    String profilePictureUrl;
+
+    String linkedinUrl;
+
+    String portfolioUrl;
+
+    String currentPosition;
+
+    AccountStatus accountStatus;
 
     Role role;
+
+    List<AcademicProfileResponseDTO> academicProfiles;
 }

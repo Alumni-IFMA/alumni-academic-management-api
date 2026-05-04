@@ -24,7 +24,7 @@ public class CampusesCoursesController {
     public ResponseEntity<List<CampusCourseResponseDTO>> getAll() {
         log.debug("REST request to get all campuses and courses");
 
-        List<CampusCourseResponseDTO> response = campusesCourseService.getALlCampusesCourse();
+        List<CampusCourseResponseDTO> response = campusesCourseService.getAllCampusesCourse();
 
         return ResponseEntity.ok(response);
     }

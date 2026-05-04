@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -56,7 +57,8 @@ class UserControllerIT {
                             .content(objectMapper.writeValueAsString(requestDTO)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("João Silva"))
-                    .andExpect(jsonPath("$.email").value("joao@gmail.com"));
+                    .andExpect(jsonPath("$.email").value("joao@gmail.com"))
+                    .andExpect(jsonPath("$.role").value("ALUMNI"));
 
         }
     }
@@ -75,6 +77,44 @@ class UserControllerIT {
     }
 
     @Nested
+    class GetUserProfile {
+
+        private static final String URL = "/auth/users/{id}/profile";
+
+        @Test
+        void givenExistingUser_whenGetProfile_thenReturn200WithProfileData() throws Exception {
+            RegisterRequestDTO requestDTO = RegisterRequestDTO.builder()
+                    .name("Maria Silva")
+                    .cpf("11122233344")
+                    .email("maria@gmail.com")
+                    .campusCourseId(1L)
+                    .entryYear(2020)
+                    .conclusionYear(2023)
+                    .build();
+
+            String responseBody = mockMvc.perform(post("/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+            Long userId = objectMapper.readTree(responseBody).get("id").asLong();
+
+            mockMvc.perform(get(URL, userId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(userId))
+                    .andExpect(jsonPath("$.name").value("Maria Silva"))
+                    .andExpect(jsonPath("$.email").value("maria@gmail.com"));
+        }
+
+        @Test
+        void givenNonExistingUser_whenGetProfile_thenReturn404() throws Exception {
+            mockMvc.perform(get(URL, 999999L))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     class FindUserById {
 
         private static final String URL = "/auth/users";
@@ -87,6 +127,7 @@ class UserControllerIT {
                     .email("joao@gmail.com")
                     .cpf("12345678900")
                     .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
                     .build();
 
             User savedUser = userRepository.save(user);

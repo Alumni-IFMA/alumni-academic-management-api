@@ -7,8 +7,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-
 @Service
 public class UserAuthenticationService implements UserDetailsService {
 
@@ -26,7 +24,7 @@ public class UserAuthenticationService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .authorities(Collections.emptyList())
+                .authorities("ROLE_" + user.getRole().name())
                 .build();
     }
 }

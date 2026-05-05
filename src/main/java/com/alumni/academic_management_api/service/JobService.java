@@ -8,11 +8,11 @@ import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.JobMapper;
 import com.alumni.academic_management_api.repository.JobRepository;
 import com.alumni.academic_management_api.repository.specification.JobSpecification;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,6 +35,7 @@ public class JobService {
         return jobMapper.toResponseDTO(jobRepository.save(job));
     }
 
+    @Transactional(readOnly = true)
     public Page<JobResponseDTO> findAll(
             String keyword,
             String area,
@@ -67,6 +68,7 @@ public class JobService {
         return jobRepository.findAll(spec, pageable).map(jobMapper::toResponseDTO);
     }
 
+    @Transactional(readOnly = true)
     public JobResponseDTO findById(Long id) {
         Job job = jobRepository.findById(id)
                 .filter(Job::isActive)

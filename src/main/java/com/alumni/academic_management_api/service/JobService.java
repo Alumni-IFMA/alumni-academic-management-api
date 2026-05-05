@@ -43,7 +43,8 @@ public class JobService {
             String location,
             BigDecimal minSalary,
             Boolean remote,
-            Pageable pageable) {
+            Pageable pageable
+    ) {
         Specification<Job> spec = Specification.where(JobSpecification.isActive());
 
         if (keyword != null && !keyword.isBlank()) {
@@ -73,6 +74,7 @@ public class JobService {
         Job job = jobRepository.findById(id)
                 .filter(Job::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
+
         return jobMapper.toResponseDTO(job);
     }
 
@@ -80,14 +82,19 @@ public class JobService {
         Job job = jobRepository.findById(id)
                 .filter(Job::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
+
         jobMapper.updateEntityFromDTO(dto, job);
+
         return jobMapper.toResponseDTO(jobRepository.save(job));
     }
 
     public void delete(Long id) {
         Job job = jobRepository.findById(id)
+                .filter(Job::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + id));
+
         job.setActive(false);
+
         jobRepository.save(job);
     }
 }

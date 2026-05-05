@@ -341,5 +341,23 @@ class JobServiceTest {
 
             Mockito.verify(jobRepository, Mockito.never()).save(Mockito.any());
         }
+
+        @Test
+        void givenInactiveJob_whenDelete_thenThrowResourceNotFoundException() {
+            Job inactiveJob = Job.builder()
+                    .id(1L)
+                    .title("Vaga Inativa")
+                    .company("Empresa X")
+                    .description("Descrição")
+                    .active(false)
+                    .build();
+
+            Mockito.when(jobRepository.findById(1L)).thenReturn(Optional.of(inactiveJob));
+
+            assertThatThrownBy(() -> jobService.delete(1L))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(jobRepository, Mockito.never()).save(Mockito.any());
+        }
     }
 }

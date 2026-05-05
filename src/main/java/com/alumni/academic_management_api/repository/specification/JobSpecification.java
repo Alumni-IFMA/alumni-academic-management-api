@@ -32,7 +32,7 @@ public class JobSpecification {
     }
 
     public static Specification<Job> hasExperienceLevels(List<ExperienceLevel> levels) {
-        return (root, query, cb) -> root.get("experienceLevel").in(levels);
+        return (root, query, cb) -> root.<ExperienceLevel>get("experienceLevel").in(levels);
     }
 
     public static Specification<Job> hasLocation(String location) {

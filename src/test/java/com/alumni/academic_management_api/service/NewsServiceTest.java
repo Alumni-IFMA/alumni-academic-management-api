@@ -17,10 +17,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 class NewsServiceTest {
@@ -131,6 +135,55 @@ class NewsServiceTest {
 
             assertThat(result.getTotalElements()).isEqualTo(0);
             assertThat(result.getContent()).isEmpty();
+        }
+    }
+
+    @Nested
+    class FindById {
+
+        @Test
+        void givenExistingActiveNews_whenFindById_thenReturnNewsResponseDTO() {
+            News news = buildActiveNews();
+            NewsResponseDTO response = buildResponseDTO();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(news));
+            Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+
+            NewsResponseDTO result = newsService.findById(1L);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1L);
+
+            Mockito.verify(newsRepository).findById(1L);
+            Mockito.verify(newsMapper).toResponseDTO(news);
+        }
+
+        @Test
+        void givenNonExistingNews_whenFindById_thenThrowResourceNotFoundException() {
+            Mockito.when(newsRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> newsService.findById(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(newsMapper, Mockito.never()).toResponseDTO(Mockito.any());
+        }
+
+        @Test
+        void givenInactiveNews_whenFindById_thenThrowResourceNotFoundException() {
+            News inactiveNews = News.builder()
+                    .id(1L)
+                    .title("Notícia Inativa")
+                    .content("Conteúdo")
+                    .active(false)
+                    .build();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(inactiveNews));
+
+            assertThatThrownBy(() -> newsService.findById(1L))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(newsMapper, Mockito.never()).toResponseDTO(Mockito.any());
         }
     }
 }

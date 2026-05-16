@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.service;
 import com.alumni.academic_management_api.dto.news.NewsRequestDTO;
 import com.alumni.academic_management_api.dto.news.NewsResponseDTO;
 import com.alumni.academic_management_api.entity.News;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.NewsMapper;
 import com.alumni.academic_management_api.repository.NewsRepository;
 import org.springframework.data.domain.Page;
@@ -32,5 +33,13 @@ public class NewsService {
     public Page<NewsResponseDTO> findAll(Pageable pageable) {
         return newsRepository.findAllByActiveTrueOrderByPublishedAtDesc(pageable)
                 .map(newsMapper::toResponseDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public NewsResponseDTO findById(Long id) {
+        News news = newsRepository.findById(id)
+                .filter(News::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
+        return newsMapper.toResponseDTO(news);
     }
 }

@@ -37,6 +37,7 @@ public class JobController {
     @PostMapping
     public ResponseEntity<JobResponseDTO> create(@RequestBody @Valid JobRequestDTO request) {
         log.debug("REST request to create job");
+
         return ResponseEntity.status(HttpStatus.CREATED).body(jobService.create(request));
     }
 
@@ -48,30 +49,38 @@ public class JobController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) BigDecimal minSalary,
             @RequestParam(required = false) Boolean remote,
-            Pageable pageable) {
+            Pageable pageable
+    ) {
         log.debug("REST request to list jobs");
+
         return ResponseEntity.ok(
-                jobService.findAll(keyword, area, experience, location, minSalary, remote, pageable));
+                jobService.findAll(keyword, area, experience, location, minSalary, remote, pageable)
+        );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<JobResponseDTO> findById(@PathVariable Long id) {
         log.debug("REST request to get job: {}", id);
+
         return ResponseEntity.ok(jobService.findById(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<JobResponseDTO> update(
             @PathVariable Long id,
-            @RequestBody @Valid JobRequestDTO request) {
+            @RequestBody @Valid JobRequestDTO request
+    ) {
         log.debug("REST request to update job: {}", id);
+
         return ResponseEntity.ok(jobService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         log.debug("REST request to deactivate job: {}", id);
+
         jobService.delete(id);
+
         return ResponseEntity.noContent().build();
     }
 }

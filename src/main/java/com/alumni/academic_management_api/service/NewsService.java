@@ -5,6 +5,8 @@ import com.alumni.academic_management_api.dto.news.NewsResponseDTO;
 import com.alumni.academic_management_api.entity.News;
 import com.alumni.academic_management_api.mapper.NewsMapper;
 import com.alumni.academic_management_api.repository.NewsRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,5 +26,11 @@ public class NewsService {
         News news = newsMapper.toEntity(dto);
         news.setActive(true);
         return newsMapper.toResponseDTO(newsRepository.save(news));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NewsResponseDTO> findAll(Pageable pageable) {
+        return newsRepository.findAllByActiveTrueOrderByPublishedAtDesc(pageable)
+                .map(newsMapper::toResponseDTO);
     }
 }

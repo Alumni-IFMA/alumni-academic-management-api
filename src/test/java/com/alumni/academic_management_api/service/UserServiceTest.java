@@ -212,4 +212,73 @@ class UserServiceTest {
                     .hasMessageContaining("99");
         }
     }
+
+    @Nested
+    class UpdateUserRole {
+
+        @Test
+        void givenAdminUpdatingOtherUser_whenUpdateUserRole_thenReturnUpdatedUser() {
+            Long targetId = 2L;
+            String adminEmail = "admin@test.com";
+
+            User targetUser = User.builder()
+                    .name("Target")
+                    .email("target@test.com")
+                    .cpf("99999999999")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
+                    .build();
+
+            UserSimpleDTO expectedDTO = new UserSimpleDTO(
+                    targetId,
+                    "Target",
+                    "target@test.com",
+                    List.of(),
+                    AccountStatus.PENDING_VERIFICATION,
+                    Role.ADMIN
+            );
+
+            Mockito.when(userRepository.findById(targetId)).thenReturn(Optional.of(targetUser));
+            Mockito.when(userRepository.save(targetUser)).thenReturn(targetUser);
+            Mockito.when(userMapper.toSimpleDTO(targetUser)).thenReturn(expectedDTO);
+
+            UserSimpleDTO result = userService.updateUserRole(targetId, Role.ADMIN, adminEmail);
+
+            assertThat(result.getRole()).isEqualTo(Role.ADMIN);
+            Mockito.verify(userRepository).save(targetUser);
+        }
+
+        @Test
+        void givenAdminUpdatingOwnRole_whenUpdateUserRole_thenThrowBusinessException() {
+            Long targetId = 1L;
+            String adminEmail = "admin@test.com";
+
+            User adminUser = User.builder()
+                    .name("Admin")
+                    .email(adminEmail)
+                    .cpf("11111111100")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ADMIN)
+                    .build();
+
+            Mockito.when(userRepository.findById(targetId)).thenReturn(Optional.of(adminUser));
+
+            assertThatThrownBy(() -> userService.updateUserRole(targetId, Role.ALUMNI, adminEmail))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("cannot change their own role");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+
+        @Test
+        void givenNonExistingUser_whenUpdateUserRole_thenThrowResourceNotFoundException() {
+            Mockito.when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.updateUserRole(99L, Role.ADMIN, "admin@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
 }

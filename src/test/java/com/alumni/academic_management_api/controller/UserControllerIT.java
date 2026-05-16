@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
@@ -69,6 +70,7 @@ class UserControllerIT {
         private static final String URL = "/auth/users";
 
         @Test
+        @WithMockUser(roles = "ADMIN")
         void givenUsersExist_whenFindAll_thenReturn200WithList() throws Exception {
             mockMvc.perform(get(URL))
                     .andExpect(status().isOk())
@@ -82,6 +84,7 @@ class UserControllerIT {
         private static final String URL = "/auth/users/{id}/profile";
 
         @Test
+        @WithMockUser
         void givenExistingUser_whenGetProfile_thenReturn200WithProfileData() throws Exception {
             RegisterRequestDTO requestDTO = RegisterRequestDTO.builder()
                     .name("Maria Silva")
@@ -108,6 +111,7 @@ class UserControllerIT {
         }
 
         @Test
+        @WithMockUser
         void givenNonExistingUser_whenGetProfile_thenReturn404() throws Exception {
             mockMvc.perform(get(URL, 999999L))
                     .andExpect(status().isNotFound());
@@ -121,6 +125,7 @@ class UserControllerIT {
 
 
         @Test
+        @WithMockUser
         void givenValidUserRequest_whenFindById_thenReturnUser() throws Exception {
             User user = User.builder()
                     .name("João Silva")
@@ -139,6 +144,7 @@ class UserControllerIT {
         }
 
         @Test
+        @WithMockUser
         void givenInvalidUserRequest_whenFindById_thenReturnNotFound() throws Exception {
             mockMvc.perform(get("/auth/users/{id}", 999L))
                     .andExpect(status().isNotFound())

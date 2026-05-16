@@ -6,6 +6,7 @@ import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
+import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -38,7 +39,6 @@ public class UserService {
         User user = userMapper.toEntity(requestDTO);
 
         user.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
-        user.setRole(Role.ALUMNI);
 
         User savedUser = userRepository.save(user);
 
@@ -65,5 +65,18 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         return userMapper.toSimpleDTO(user);
+    }
+
+    public UserSimpleDTO updateUserRole(Long targetId, Role newRole, String authenticatedEmail) {
+        User targetUser = userRepository.findById(targetId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + targetId));
+
+        if (targetUser.getEmail().equals(authenticatedEmail)) {
+            throw new BusinessException("Admin cannot change their own role");
+        }
+
+        targetUser.setRole(newRole);
+        User savedUser = userRepository.save(targetUser);
+        return userMapper.toSimpleDTO(savedUser);
     }
 }

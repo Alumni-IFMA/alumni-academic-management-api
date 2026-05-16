@@ -186,4 +186,56 @@ class NewsServiceTest {
             Mockito.verify(newsMapper, Mockito.never()).toResponseDTO(Mockito.any());
         }
     }
+
+    @Nested
+    class Update {
+
+        @Test
+        void givenValidRequest_whenUpdate_thenReturnUpdatedNewsResponseDTO() {
+            News news = buildActiveNews();
+            NewsRequestDTO request = buildRequestDTO();
+            NewsResponseDTO response = buildResponseDTO();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(news));
+            Mockito.doNothing().when(newsMapper).updateEntityFromDTO(request, news);
+            Mockito.when(newsRepository.save(news)).thenReturn(news);
+            Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+
+            NewsResponseDTO result = newsService.update(1L, request);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1L);
+
+            Mockito.verify(newsMapper).updateEntityFromDTO(request, news);
+            Mockito.verify(newsRepository).save(news);
+        }
+
+        @Test
+        void givenNonExistingNews_whenUpdate_thenThrowResourceNotFoundException() {
+            Mockito.when(newsRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> newsService.update(99L, buildRequestDTO()))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
+        }
+
+        @Test
+        void givenInactiveNews_whenUpdate_thenThrowResourceNotFoundException() {
+            News inactiveNews = News.builder()
+                    .id(1L)
+                    .title("Notícia Inativa")
+                    .content("Conteúdo")
+                    .active(false)
+                    .build();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(inactiveNews));
+
+            assertThatThrownBy(() -> newsService.update(1L, buildRequestDTO()))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
 }

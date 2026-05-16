@@ -42,4 +42,12 @@ public class NewsService {
                 .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
         return newsMapper.toResponseDTO(news);
     }
+
+    public NewsResponseDTO update(Long id, NewsRequestDTO dto) {
+        News news = newsRepository.findById(id)
+                .filter(News::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
+        newsMapper.updateEntityFromDTO(dto, news);
+        return newsMapper.toResponseDTO(newsRepository.save(news));
+    }
 }

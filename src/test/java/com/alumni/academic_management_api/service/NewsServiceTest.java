@@ -238,4 +238,48 @@ class NewsServiceTest {
             Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
         }
     }
+
+    @Nested
+    class Delete {
+
+        @Test
+        void givenExistingNews_whenDelete_thenSetActiveToFalse() {
+            News news = buildActiveNews();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(news));
+
+            newsService.delete(1L);
+
+            assertThat(news.isActive()).isFalse();
+            Mockito.verify(newsRepository).save(news);
+        }
+
+        @Test
+        void givenNonExistingNews_whenDelete_thenThrowResourceNotFoundException() {
+            Mockito.when(newsRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> newsService.delete(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
+        }
+
+        @Test
+        void givenInactiveNews_whenDelete_thenThrowResourceNotFoundException() {
+            News inactiveNews = News.builder()
+                    .id(1L)
+                    .title("Notícia Inativa")
+                    .content("Conteúdo")
+                    .active(false)
+                    .build();
+
+            Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(inactiveNews));
+
+            assertThatThrownBy(() -> newsService.delete(1L))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
 }

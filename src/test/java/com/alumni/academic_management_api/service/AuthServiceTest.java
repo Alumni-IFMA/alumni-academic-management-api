@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.service;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
 import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.repository.UserRepository;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +50,7 @@ class AuthServiceTest {
                     .thenReturn(Optional.of(user));
             Mockito.when(passwordEncoder.matches("12345678", "encrypted"))
                     .thenReturn(true);
-            Mockito.when(jwtService.generateToken(email))
+            Mockito.when(jwtService.generateToken(email, Role.ALUMNI))
                     .thenReturn("jwt-token");
 
             LoginResponseDTO response = authService.login(request);

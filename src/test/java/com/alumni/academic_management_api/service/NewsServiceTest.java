@@ -1,0 +1,94 @@
+package com.alumni.academic_management_api.service;
+
+import com.alumni.academic_management_api.dto.news.NewsRequestDTO;
+import com.alumni.academic_management_api.dto.news.NewsResponseDTO;
+import com.alumni.academic_management_api.entity.News;
+import com.alumni.academic_management_api.mapper.NewsMapper;
+import com.alumni.academic_management_api.repository.NewsRepository;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@ExtendWith(MockitoExtension.class)
+class NewsServiceTest {
+
+    @Mock
+    private NewsRepository newsRepository;
+
+    @Mock
+    private NewsMapper newsMapper;
+
+    @InjectMocks
+    private NewsService newsService;
+
+    private static final LocalDateTime PUBLISHED_AT = LocalDateTime.of(2026, 5, 16, 10, 0);
+
+    private static News buildActiveNews() {
+        return News.builder()
+                .id(1L)
+                .title("IFMA abre inscrições para Semana de TI")
+                .summary("Evento reúne egressos e alunos ativos")
+                .content("O IFMA abre inscrições para a Semana de TI 2026.")
+                .coverImageUrl("https://ifma.edu.br/semana-ti.jpg")
+                .publishedAt(PUBLISHED_AT)
+                .active(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    private static NewsRequestDTO buildRequestDTO() {
+        return NewsRequestDTO.builder()
+                .title("IFMA abre inscrições para Semana de TI")
+                .summary("Evento reúne egressos e alunos ativos")
+                .content("O IFMA abre inscrições para a Semana de TI 2026.")
+                .coverImageUrl("https://ifma.edu.br/semana-ti.jpg")
+                .publishedAt(PUBLISHED_AT)
+                .build();
+    }
+
+    private static NewsResponseDTO buildResponseDTO() {
+        return NewsResponseDTO.builder()
+                .id(1L)
+                .title("IFMA abre inscrições para Semana de TI")
+                .summary("Evento reúne egressos e alunos ativos")
+                .content("O IFMA abre inscrições para a Semana de TI 2026.")
+                .coverImageUrl("https://ifma.edu.br/semana-ti.jpg")
+                .publishedAt(PUBLISHED_AT)
+                .active(true)
+                .build();
+    }
+
+    @Nested
+    class Create {
+
+        @Test
+        void givenValidRequest_whenCreate_thenReturnNewsResponseDTO() {
+            NewsRequestDTO request = buildRequestDTO();
+            News news = buildActiveNews();
+            NewsResponseDTO response = buildResponseDTO();
+
+            Mockito.when(newsMapper.toEntity(request)).thenReturn(news);
+            Mockito.when(newsRepository.save(news)).thenReturn(news);
+            Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+
+            NewsResponseDTO result = newsService.create(request);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getTitle()).isEqualTo("IFMA abre inscrições para Semana de TI");
+            assertThat(result.isActive()).isTrue();
+
+            Mockito.verify(newsMapper).toEntity(request);
+            Mockito.verify(newsRepository).save(news);
+            Mockito.verify(newsMapper).toResponseDTO(news);
+        }
+    }
+}

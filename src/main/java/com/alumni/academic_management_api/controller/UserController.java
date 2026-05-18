@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.UpdateRoleRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
@@ -8,7 +9,10 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,6 +65,16 @@ public class UserController {
 
         UserSimpleDTO response = userService.findUserById(id);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/users/{id}/role")
+    public ResponseEntity<UserSimpleDTO> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateRoleRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.debug("REST request to update role of user: {}", id);
+        UserSimpleDTO response = userService.updateUserRole(id, request.getRole(), userDetails.getUsername());
         return ResponseEntity.ok(response);
     }
 }

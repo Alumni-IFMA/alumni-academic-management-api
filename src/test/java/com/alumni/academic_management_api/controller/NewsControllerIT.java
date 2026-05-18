@@ -9,6 +9,7 @@ import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.NewsRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.minio.MinioClient;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +38,9 @@ class NewsControllerIT {
     private static final String BASE_URL = "/news";
     private static final String PASSWORD = "senha12345";
     private static final LocalDateTime PUBLISHED_AT = LocalDateTime.of(2026, 5, 16, 10, 0);
+
+    @MockBean
+    private MinioClient minioClient;
 
     @Autowired
     private MockMvc mockMvc;

@@ -16,7 +16,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -54,6 +58,15 @@ public class NewsController {
     ) {
         log.debug("REST request to update news: {}", id);
         return ResponseEntity.ok(newsService.update(id, request));
+    }
+
+    @PostMapping("/{id}/cover-image")
+    public ResponseEntity<Map<String, String>> uploadCoverImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        log.debug("REST request to upload cover image for news: {}", id);
+        String url = newsService.uploadCoverImage(id, file);
+        return ResponseEntity.ok(Map.of("coverImageUrl", url));
     }
 
     @DeleteMapping("/{id}")

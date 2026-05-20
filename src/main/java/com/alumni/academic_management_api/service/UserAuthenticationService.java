@@ -26,10 +26,10 @@ public class UserAuthenticationService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         Role role = user.getRole() != null ? user.getRole() : Role.ALUMNI;
+        String password = user.getPassword() != null ? user.getPassword() : "";
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+                .password(password)
                 .authorities("ROLE_" + role.name())
                 .build();
     }

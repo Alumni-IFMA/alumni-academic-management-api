@@ -5,21 +5,26 @@ import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.UserRepository;
+import com.alumni.academic_management_api.service.FileStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.minio.MinioClient;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.minio.MinioClient;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +37,9 @@ class UserControllerIT {
 
     @MockBean
     private MinioClient minioClient;
+
+    @MockBean
+    private FileStorageService fileStorageService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -154,6 +162,61 @@ class UserControllerIT {
             mockMvc.perform(get("/auth/users/{id}", 999L))
                     .andExpect(status().isNotFound())
                     .andExpect(content().string(containsString("User not found")));
+        }
+    }
+
+    @Nested
+    class UploadProfilePicture {
+
+        private static final String URL = "/auth/users/{id}/profile-picture";
+
+        @Test
+        void givenNoToken_whenUploadProfilePicture_thenReturn401() throws Exception {
+            User user = userRepository.save(User.builder()
+                    .name("Test User")
+                    .cpf("10000000001")
+                    .email("upload401@test.com")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
+                    .build());
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "avatar.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(URL, user.getId()).file(file))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser
+        void givenAuthenticatedUser_whenUploadProfilePicture_thenReturn200WithUrl() throws Exception {
+            User user = userRepository.save(User.builder()
+                    .name("Test User")
+                    .cpf("10000000002")
+                    .email("upload200@test.com")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
+                    .build());
+            String expectedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
+            Mockito.when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "avatar.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(URL, user.getId()).file(file))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.profilePictureUrl").value(expectedUrl));
+        }
+
+        @Test
+        @WithMockUser
+        void givenAuthenticatedUser_whenUploadProfilePictureForNonExistentUser_thenReturn404() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "avatar.jpg", "image/jpeg", new byte[]{1}
+            );
+
+            mockMvc.perform(multipart(URL, 999999L).file(file))
+                    .andExpect(status().isNotFound());
         }
     }
 }

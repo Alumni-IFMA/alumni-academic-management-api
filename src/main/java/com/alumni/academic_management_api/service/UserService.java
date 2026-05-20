@@ -63,7 +63,11 @@ public class UserService {
                 .conclusionYear(requestDTO.getConclusionYear())
                 .build();
 
-        academicProfileRepository.save(academicProfile);
+        AcademicProfile savedAcademicProfile = academicProfileRepository.save(academicProfile);
+
+        if (savedUser.getAcademicProfiles() != null) {
+            savedUser.getAcademicProfiles().add(savedAcademicProfile);
+        }
 
         return userMapper.toSimpleDTO(savedUser);
     }

@@ -50,4 +50,12 @@ public class NewsService {
         newsMapper.updateEntityFromDTO(dto, news);
         return newsMapper.toResponseDTO(newsRepository.save(news));
     }
+
+    public void delete(Long id) {
+        News news = newsRepository.findById(id)
+                .filter(News::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
+        news.setActive(false);
+        newsRepository.save(news);
+    }
 }

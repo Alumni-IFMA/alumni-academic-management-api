@@ -13,6 +13,7 @@ import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.validation.UserValidator;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,15 +23,18 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final UserValidator userValidator;
+    private final FileStorageService fileStorageService;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
-            UserValidator userValidator
+            UserValidator userValidator,
+            FileStorageService fileStorageService
     ) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.userValidator = userValidator;
+        this.fileStorageService = fileStorageService;
     }
 
     public UserSimpleDTO createUser(RegisterRequestDTO requestDTO) {
@@ -65,6 +69,18 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         return userMapper.toSimpleDTO(user);
+    }
+
+    public String uploadProfilePicture(Long userId, MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        if (user.getProfilePictureUrl() != null) {
+            fileStorageService.deleteFile(user.getProfilePictureUrl());
+        }
+        String url = fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES);
+        user.setProfilePictureUrl(url);
+        userRepository.save(user);
+        return url;
     }
 
     public UserSimpleDTO updateUserRole(Long targetId, Role newRole, String authenticatedEmail) {

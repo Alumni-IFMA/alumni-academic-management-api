@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -66,6 +69,15 @@ public class UserController {
         UserSimpleDTO response = userService.findUserById(id);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/users/{id}/profile-picture")
+    public ResponseEntity<Map<String, String>> uploadProfilePicture(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        log.debug("REST request to upload profile picture for user: {}", id);
+        String url = userService.uploadProfilePicture(id, file);
+        return ResponseEntity.ok(Map.of("profilePictureUrl", url));
     }
 
     @PatchMapping("/users/{id}/role")

@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,9 @@ class UserServiceTest {
 
     @Mock
     private UserValidator userValidator;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private UserService userService;
@@ -279,6 +283,61 @@ class UserServiceTest {
                     .hasMessageContaining("99");
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
+
+    @Nested
+    class UploadProfilePicture {
+
+        @Test
+        void givenExistingUserWithNoPicture_whenUploadProfilePicture_thenReturnNewUrl() {
+            Long userId = 1L;
+            User user = User.builder().id(userId).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "avatar.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+            String expectedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES))
+                    .thenReturn(expectedUrl);
+
+            String result = userService.uploadProfilePicture(userId, file);
+
+            assertThat(result).isEqualTo(expectedUrl);
+            assertThat(user.getProfilePictureUrl()).isEqualTo(expectedUrl);
+            Mockito.verify(userRepository).save(user);
+        }
+
+        @Test
+        void givenUserWithExistingPicture_whenUploadProfilePicture_thenDeleteOldBeforeUploadingNew() {
+            Long userId = 1L;
+            String oldUrl = "http://localhost:9000/alumni-files/profile-pictures/old.jpg";
+            User user = User.builder().id(userId).profilePictureUrl(oldUrl).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "new.jpg", "image/jpeg", new byte[]{1}
+            );
+            String newUrl = "http://localhost:9000/alumni-files/profile-pictures/new-uuid.jpg";
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES))
+                    .thenReturn(newUrl);
+
+            userService.uploadProfilePicture(userId, file);
+
+            Mockito.verify(fileStorageService).deleteFile(oldUrl);
+            Mockito.verify(fileStorageService).uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES);
+        }
+
+        @Test
+        void givenNonExistentUserId_whenUploadProfilePicture_thenThrowResourceNotFoundException() {
+            Long userId = 999L;
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "avatar.jpg", "image/jpeg", new byte[]{1}
+            );
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.uploadProfilePicture(userId, file))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
         }
     }
 }

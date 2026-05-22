@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,9 @@ class NewsServiceTest {
 
     @Mock
     private NewsMapper newsMapper;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private NewsService newsService;
@@ -280,6 +284,72 @@ class NewsServiceTest {
                     .isInstanceOf(ResourceNotFoundException.class);
 
             Mockito.verify(newsRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
+
+    @Nested
+    class UploadCoverImage {
+
+        @Test
+        void givenExistingNewsWithNoCover_whenUploadCoverImage_thenReturnNewUrl() {
+            Long newsId = 1L;
+            News news = News.builder().id(newsId).active(true).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+            String expectedUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
+            Mockito.when(newsRepository.findById(newsId)).thenReturn(Optional.of(news));
+            Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_NEWS_IMAGES))
+                    .thenReturn(expectedUrl);
+
+            String result = newsService.uploadCoverImage(newsId, file);
+
+            assertThat(result).isEqualTo(expectedUrl);
+            assertThat(news.getCoverImageUrl()).isEqualTo(expectedUrl);
+            Mockito.verify(newsRepository).save(news);
+        }
+
+        @Test
+        void givenNewsWithExistingCover_whenUploadCoverImage_thenDeleteOldBeforeUploadingNew() {
+            Long newsId = 1L;
+            String oldUrl = "http://localhost:9000/alumni-files/news-images/old.jpg";
+            News news = News.builder().id(newsId).active(true).coverImageUrl(oldUrl).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "new.jpg", "image/jpeg", new byte[]{1}
+            );
+            Mockito.when(newsRepository.findById(newsId)).thenReturn(Optional.of(news));
+            Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_NEWS_IMAGES))
+                    .thenReturn("http://localhost:9000/alumni-files/news-images/new-uuid.jpg");
+
+            newsService.uploadCoverImage(newsId, file);
+
+            Mockito.verify(fileStorageService).deleteFile(oldUrl);
+        }
+
+        @Test
+        void givenNonExistentNewsId_whenUploadCoverImage_thenThrowResourceNotFoundException() {
+            Long newsId = 999L;
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1}
+            );
+            Mockito.when(newsRepository.findById(newsId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> newsService.uploadCoverImage(newsId, file))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
+        }
+
+        @Test
+        void givenInactiveNews_whenUploadCoverImage_thenThrowResourceNotFoundException() {
+            Long newsId = 1L;
+            News inactiveNews = News.builder().id(newsId).active(false).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1}
+            );
+            Mockito.when(newsRepository.findById(newsId)).thenReturn(Optional.of(inactiveNews));
+
+            assertThatThrownBy(() -> newsService.uploadCoverImage(newsId, file))
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 }

@@ -20,6 +20,22 @@ Isso sobe o Postgres (`5432`) e o MinIO (`9000` API / `9001` console).
 ./gradlew bootRun
 ```
 
+## Documentação da API (Swagger UI)
+
+Com a aplicação rodando, acesse:
+
+| URL | Descrição |
+|-----|-----------|
+| `http://localhost:8080/swagger-ui/index.html` | Interface visual com todos os endpoints |
+| `http://localhost:8080/v3/api-docs` | Especificação OpenAPI em JSON |
+
+Para testar endpoints protegidos, clique em **Authorize** e informe o token no formato:
+```
+Bearer <seu-token-jwt>
+```
+
+---
+
 ## Upload de arquivos (MinIO)
 
 A API utiliza MinIO para armazenamento de arquivos (fotos de perfil e capas de notícias).

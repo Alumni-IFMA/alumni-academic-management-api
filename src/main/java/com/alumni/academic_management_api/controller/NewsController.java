@@ -61,7 +61,9 @@ public class NewsController {
     @GetMapping
     @Operation(summary = "Listar notícias paginadas", description = "Público. Suporta parâmetros page, size e sort.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
+        @ApiResponse(responseCode = "200", description = "Lista paginada retornada com sucesso. "
+                + "O objeto de resposta segue a estrutura Page do Spring: "
+                + "content (array de NewsResponseDTO), totalElements, totalPages, pageable.",
             content = @Content(schema = @Schema(implementation = NewsResponseDTO.class)))
     })
     public ResponseEntity<Page<NewsResponseDTO>> findAll(Pageable pageable) {

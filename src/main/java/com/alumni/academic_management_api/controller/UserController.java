@@ -8,6 +8,7 @@ import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -65,7 +66,8 @@ public class UserController {
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
-            content = @Content(schema = @Schema(implementation = UserSimpleDTO.class))),
+            content = @Content(array = @ArraySchema(
+                    schema = @Schema(implementation = UserSimpleDTO.class)))),
         @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
         @ApiResponse(responseCode = "403", description = "Acesso negado", content = @Content)
     })

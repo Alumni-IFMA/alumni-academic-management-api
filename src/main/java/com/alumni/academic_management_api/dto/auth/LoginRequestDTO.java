@@ -23,6 +23,6 @@ public class LoginRequestDTO implements Serializable {
     private String email;
 
     @NotBlank
-    @Schema(description = "Senha do usuário", example = "senhaSegura123")
+    @Schema(description = "Senha do usuário", format = "password")
     private String password;
 }

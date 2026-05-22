@@ -3,6 +3,7 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.campusescourses.CampusCourseResponseDTO;
 import com.alumni.academic_management_api.service.CampusesCourseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,7 +34,8 @@ public class CampusesCoursesController {
         description = "Retorna todos os vínculos campus-curso disponíveis. Público, sem autenticação.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
-            content = @Content(schema = @Schema(implementation = CampusCourseResponseDTO.class)))
+            content = @Content(array = @ArraySchema(
+                    schema = @Schema(implementation = CampusCourseResponseDTO.class))))
     })
     public ResponseEntity<List<CampusCourseResponseDTO>> getAll() {
         log.debug("REST request to get all campuses and courses");

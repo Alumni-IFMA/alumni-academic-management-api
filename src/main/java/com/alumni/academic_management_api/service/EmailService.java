@@ -36,6 +36,7 @@ public class EmailService {
         try {
             Context ctx = new Context();
             ctx.setVariable("name", name);
+            ctx.setVariable("platformUrl", frontendUrl);
             String html = templateEngine.process("email/approval", ctx);
             sendHtmlEmail(to, "Seu cadastro foi aprovado!", html);
         } catch (Exception e) {

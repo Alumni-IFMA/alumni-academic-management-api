@@ -61,6 +61,7 @@ class EmailServiceTest {
 
             Context ctx = contextCaptor.getValue();
             assertThat(ctx.getVariable("name")).isEqualTo("João");
+            assertThat(ctx.getVariable("platformUrl")).isEqualTo("http://localhost:3000");
         }
 
         @Test

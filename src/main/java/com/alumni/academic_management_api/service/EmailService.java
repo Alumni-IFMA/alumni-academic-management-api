@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Slf4j
 @Service
 public class EmailService {
@@ -47,7 +50,7 @@ public class EmailService {
     @Async
     public void sendForgotPasswordEmail(String to, String token) {
         try {
-            String resetLink = frontendUrl + "/reset-password?token=" + token;
+            String resetLink = frontendUrl + "/reset-password?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
             Context ctx = new Context();
             ctx.setVariable("resetLink", resetLink);
             String html = templateEngine.process("email/forgot-password", ctx);

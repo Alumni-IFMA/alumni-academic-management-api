@@ -50,10 +50,14 @@ public class EmailService {
     @Async
     public void sendForgotPasswordEmail(String to, String token) {
         try {
-            String resetLink = frontendUrl + "/reset-password?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+            String resetLink = frontendUrl + "/reset-password?token="
+                    + URLEncoder.encode(token, StandardCharsets.UTF_8);
             Context ctx = new Context();
+
             ctx.setVariable("resetLink", resetLink);
+
             String html = templateEngine.process("email/forgot-password", ctx);
+
             sendHtmlEmail(to, "Redefinição de senha", html);
         } catch (Exception e) {
             log.error("Falha ao enviar e-mail de recuperação de senha para {}: {}", to, e.getMessage());

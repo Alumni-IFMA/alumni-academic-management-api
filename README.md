@@ -36,6 +36,42 @@ Bearer <seu-token-jwt>
 
 ---
 
+## Serviço de e-mail
+
+A API envia e-mails transacionais HTML (aprovação de cadastro e recuperação de senha) via Spring Mail + Thymeleaf.
+
+### Variáveis necessárias no `.env`
+
+| Variável | Produção (Gmail) | Dev local (Mailhog) |
+|---|---|---|
+| `MAIL_HOST` | `smtp.gmail.com` | `localhost` |
+| `MAIL_PORT` | `587` | `1025` |
+| `MAIL_USERNAME` | seu e-mail Gmail | `test` |
+| `MAIL_PASSWORD` | App Password do Google | `test` |
+| `MAIL_FROM` | `noreply@alumniifma.com` | `noreply@alumniifma.com` |
+| `APP_FRONTEND_URL` | URL do front em produção | `http://localhost:3000` |
+| `MAIL_SMTP_AUTH` | `true` | `false` |
+| `MAIL_SMTP_STARTTLS` | `true` | `false` |
+
+> **Gmail:** use uma **App Password** (nunca a senha da conta). Ative em: Conta Google → Segurança → Verificação em duas etapas → Senhas de app.
+
+### Testando localmente com Mailhog
+
+O Mailhog simula um servidor SMTP sem enviar e-mails reais.
+
+```bash
+docker-compose up -d mailhog
+./gradlew bootRun
+```
+
+Acesse `http://localhost:8025` para visualizar os e-mails capturados.
+
+Para disparar um e-mail de teste, use os endpoints temporários disponíveis no Swagger:
+- `POST /dev/email/approval` — e-mail de aprovação de cadastro
+- `POST /dev/email/forgot-password` — e-mail de recuperação de senha
+
+---
+
 ## Upload de arquivos (MinIO)
 
 A API utiliza MinIO para armazenamento de arquivos (fotos de perfil e capas de notícias).

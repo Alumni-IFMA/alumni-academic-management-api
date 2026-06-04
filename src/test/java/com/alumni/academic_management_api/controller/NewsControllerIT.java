@@ -8,7 +8,9 @@ import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.NewsRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
+import com.alumni.academic_management_api.service.FileStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.minio.MinioClient;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -16,13 +18,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,6 +43,12 @@ class NewsControllerIT {
     private static final String BASE_URL = "/news";
     private static final String PASSWORD = "senha12345";
     private static final LocalDateTime PUBLISHED_AT = LocalDateTime.of(2026, 5, 16, 10, 0);
+
+    @MockBean
+    private MinioClient minioClient;
+
+    @MockBean
+    private FileStorageService fileStorageService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -285,6 +298,67 @@ class NewsControllerIT {
             mockMvc.perform(put(BASE_URL + "/{id}", 999999L)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request))
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    class UploadCoverImage {
+
+        private static final String COVER_IMAGE_URL = BASE_URL + "/{id}/cover-image";
+
+        @Test
+        void givenNoToken_whenUploadCoverImage_thenReturn401() throws Exception {
+            News news = saveActiveNews("Notícia de Capa");
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId()).file(file))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void givenAlumniToken_whenUploadCoverImage_thenReturn403() throws Exception {
+            String token = loginAndGetToken("alumni@test.com", Role.ALUMNI, "77777777777");
+            News news = saveActiveNews("Notícia de Capa");
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId())
+                            .file(file)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void givenAdminToken_whenUploadCoverImage_thenReturn200WithUrl() throws Exception {
+            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "88888888888");
+            News news = saveActiveNews("Notícia com Capa");
+            String expectedUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
+            when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId())
+                            .file(file)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.coverImageUrl").value(expectedUrl));
+        }
+
+        @Test
+        void givenAdminToken_whenUploadCoverImageForNonExistentNews_thenReturn404() throws Exception {
+            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "99999999999");
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "cover.jpg", "image/jpeg", new byte[]{1}
+            );
+
+            mockMvc.perform(multipart(COVER_IMAGE_URL, 999999L)
+                            .file(file)
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isNotFound());
         }

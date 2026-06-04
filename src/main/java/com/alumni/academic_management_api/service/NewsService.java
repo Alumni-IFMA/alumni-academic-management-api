@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Transactional
 @Service
@@ -17,10 +18,14 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final NewsMapper newsMapper;
+    private final FileStorageService fileStorageService;
 
-    public NewsService(NewsRepository newsRepository, NewsMapper newsMapper) {
+    public NewsService(NewsRepository newsRepository,
+                       NewsMapper newsMapper,
+                       FileStorageService fileStorageService) {
         this.newsRepository = newsRepository;
         this.newsMapper = newsMapper;
+        this.fileStorageService = fileStorageService;
     }
 
     public NewsResponseDTO create(NewsRequestDTO dto) {
@@ -49,6 +54,19 @@ public class NewsService {
                 .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
         newsMapper.updateEntityFromDTO(dto, news);
         return newsMapper.toResponseDTO(newsRepository.save(news));
+    }
+
+    public String uploadCoverImage(Long newsId, MultipartFile file) {
+        News news = newsRepository.findById(newsId)
+                .filter(News::isActive)
+                .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + newsId));
+        if (news.getCoverImageUrl() != null) {
+            fileStorageService.deleteFile(news.getCoverImageUrl());
+        }
+        String url = fileStorageService.uploadFile(file, FileStorageService.FOLDER_NEWS_IMAGES);
+        news.setCoverImageUrl(url);
+        newsRepository.save(news);
+        return url;
     }
 
     public void delete(Long id) {

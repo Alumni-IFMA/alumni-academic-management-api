@@ -83,6 +83,8 @@ dependencies {
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
 	implementation 'org.flywaydb:flyway-core:11.20.3'
 	implementation 'org.flywaydb:flyway-database-postgresql:11.20.3'
+	implementation 'io.minio:minio:8.5.10'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 
 	compileOnly 'org.projectlombok:lombok'
 

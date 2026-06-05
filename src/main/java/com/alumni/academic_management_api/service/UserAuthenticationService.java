@@ -1,14 +1,13 @@
 package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import java.util.List;
 
 @Service
 public class UserAuthenticationService implements UserDetailsService {
@@ -24,10 +23,12 @@ public class UserAuthenticationService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        Role role = user.getRole() != null ? user.getRole() : Role.ALUMNI;
+        String password = user.getPassword() != null ? user.getPassword() : "";
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
+                .password(password)
+                .authorities("ROLE_" + role.name())
                 .build();
     }
 }

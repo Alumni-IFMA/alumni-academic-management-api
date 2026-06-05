@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import io.minio.MinioClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +31,9 @@ class AuthControllerIT {
     private static final String USER_EMAIL = "joao@email.com";
     private static final String VALID_PASSWORD = "12345678";
     private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid email or password";
+
+    @MockBean
+    private MinioClient minioClient;
 
     @Autowired
     private MockMvc mockMvc;

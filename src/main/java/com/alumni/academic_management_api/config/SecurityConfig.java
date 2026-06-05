@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                        .requestMatchers("/dev/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/campus-courses").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/auth/users/*/role").hasRole("ADMIN")

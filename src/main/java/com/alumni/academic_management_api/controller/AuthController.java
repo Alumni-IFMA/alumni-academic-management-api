@@ -49,11 +49,11 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @Operation(summary = "Solicitar recuperação de senha", description = "Gera um token de recuperação e " +
-            "envia para o e-mail do usuário.")
+            "envia para o email do usuário.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Solicitação processada com sucesso",
                     content = @Content),
-            @ApiResponse(responseCode = "400", description = "E-mail com formato inválido",
+            @ApiResponse(responseCode = "400", description = "Email com formato inválido",
                     content = @Content)
     })
     public ResponseEntity<Void> forgotPasssword(@RequestBody @Valid ForgotPasswordRequestDTO request){

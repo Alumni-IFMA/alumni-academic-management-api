@@ -59,34 +59,34 @@ public class AuthService {
 
         String token = UUID.randomUUID().toString();
 
-        PasswordResetToken resetToken = PasswordResetToken.builder()
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
                 .expiryDate(LocalDateTime.now().plusHours(1))
                 .user(user)
                 .token(token)
                 .build();
 
-        tokenRepository.save(resetToken);
+        tokenRepository.save(passwordResetToken);
 
         emailService.sendForgotPasswordEmail(user.getEmail(), token);
     }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+        PasswordResetToken passwordResetToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new InvalidTokenException("Invalid token or not found"));
 
-        if (resetToken.isExpired()){
-           tokenRepository.delete(resetToken);
+        if (passwordResetToken.isExpired()){
+           tokenRepository.delete(passwordResetToken);
            throw new InvalidTokenException("Token is expired");
         }
 
-        User user = resetToken.getUser();
+        User user = passwordResetToken.getUser();
 
         user.setPassword(passwordEncoder.encode(newPassword));
 
         userRepository.save(user);
 
-        tokenRepository.delete(resetToken);
+        tokenRepository.delete(passwordResetToken);
     }
 
 }

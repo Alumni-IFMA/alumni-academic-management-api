@@ -54,8 +54,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/auth/users/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/users/*/profile-picture").authenticated()
                         .requestMatchers(HttpMethod.GET, "/auth/users/**", "/campus-courses").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/forgot-password", "/auth/forgot-password/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/reset-password", "/auth/reset-password/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/forgot-password",
+                                "/auth/forgot-password/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/reset-password",
+                                "/auth/reset-password/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/jobs", "/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/jobs").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/jobs/**").hasRole("ADMIN")

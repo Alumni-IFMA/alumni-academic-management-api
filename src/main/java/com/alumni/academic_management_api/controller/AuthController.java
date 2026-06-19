@@ -63,11 +63,12 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Redefinir senha", description = "Valida o token e atualiza a senha do usuário no banco de dados.")
+    @Operation(summary = "Redefinir senha", description = "Valida o token e atualiza a senha no banco de dados.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Senha redefinida com sucesso",
                     content = @Content),
-            @ApiResponse(responseCode = "400", description = "Token inválido, expirado ou formato de requisição incorreto",
+            @ApiResponse(responseCode = "400", description = "Token inválido, expirado ou " +
+                    "formato de requisição incorreto",
                     content = @Content)
     })
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO request) {

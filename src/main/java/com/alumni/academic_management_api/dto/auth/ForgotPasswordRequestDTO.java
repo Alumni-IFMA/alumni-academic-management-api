@@ -20,6 +20,7 @@ public class ForgotPasswordRequestDTO implements Serializable {
 
     @NotBlank(message = "O e-mail não pode estar em branco")
     @Email(message = "Formato de e-mail inválido")
-    @Schema(description = "E-mail cadastrado do usuário para receber o link de recuperação", example = "estudante@alumni.ifma.edu.br")
+    @Schema(description = "E-mail cadastrado do usuário para receber o link de recuperação",
+            example = "alumni@alumni.ifma.edu.br")
     private String email;
 }

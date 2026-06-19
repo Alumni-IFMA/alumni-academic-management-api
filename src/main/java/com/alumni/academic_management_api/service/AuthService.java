@@ -8,7 +8,6 @@ import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.InvalidTokenException;
 import com.alumni.academic_management_api.repository.PasswordResetTokenRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +55,7 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException("E-mail not found"));
 
         tokenRepository.deleteByUser(user);
+        tokenRepository.flush();
 
         String token = UUID.randomUUID().toString();
 

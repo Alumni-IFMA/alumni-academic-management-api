@@ -2,12 +2,16 @@ package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
+import com.alumni.academic_management_api.entity.AcademicProfile;
+import com.alumni.academic_management_api.entity.CampusCourse;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
+import com.alumni.academic_management_api.repository.AcademicProfileRepository;
+import com.alumni.academic_management_api.repository.CampusesCourseRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.validation.UserValidator;
 import org.junit.jupiter.api.Nested;
@@ -36,6 +40,12 @@ class UserServiceTest {
 
     @Mock
     private UserValidator userValidator;
+
+    @Mock
+    private CampusesCourseRepository campusesCourseRepository;
+
+    @Mock
+    private AcademicProfileRepository academicProfileRepository;
 
     @Mock
     private FileStorageService fileStorageService;
@@ -73,6 +83,9 @@ class UserServiceTest {
                     Role.ALUMNI
             );
 
+            CampusCourse mockCourse = new CampusCourse();
+            mockCourse.setId(1L);
+
             Mockito.doNothing().when(userValidator).validateCreate(request);
 
             Mockito.when(userMapper.toEntity(request))
@@ -80,6 +93,12 @@ class UserServiceTest {
 
             Mockito.when(userRepository.save(user))
                     .thenReturn(user);
+
+            Mockito.when(campusesCourseRepository.findById(1L))
+                    .thenReturn(Optional.of(mockCourse));
+
+            Mockito.when(academicProfileRepository.save(Mockito.any()))
+                    .thenReturn(new AcademicProfile());
 
             Mockito.when(userMapper.toSimpleDTO(user))
                     .thenReturn(response);
@@ -91,6 +110,34 @@ class UserServiceTest {
             assertThat(result.getName()).isEqualTo("João");
             assertThat(result.getEmail()).isEqualTo("joao@email.com");
             assertThat(result.getRole()).isEqualTo(Role.ALUMNI);
+        }
+
+        @Test
+        void givenInvalidCampusCourse_whenCreateUser_thenThrowResourceNotFoundException() {
+            RegisterRequestDTO request = new RegisterRequestDTO(
+                    "João",
+                    "12345678900",
+                    "joao@email.com",
+                    99L,
+                    2021,
+                    2024
+            );
+
+            User user = User.builder().build();
+
+            Mockito.doNothing().when(userValidator).validateCreate(request);
+
+            Mockito.when(userMapper.toEntity(request))
+                    .thenReturn(user);
+
+            Mockito.when(userRepository.save(user))
+                    .thenReturn(user);
+
+            Mockito.when(campusesCourseRepository.findById(99L))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.createUser(request))
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
 
         @Test

@@ -3,12 +3,16 @@ package com.alumni.academic_management_api.service;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
+import com.alumni.academic_management_api.entity.AcademicProfile;
+import com.alumni.academic_management_api.entity.CampusCourse;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.UserMapper;
+import com.alumni.academic_management_api.repository.AcademicProfileRepository;
+import com.alumni.academic_management_api.repository.CampusesCourseRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.validation.UserValidator;
 import jakarta.transaction.Transactional;
@@ -23,17 +27,23 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final UserValidator userValidator;
+    private final AcademicProfileRepository academicProfileRepository;
+    private final CampusesCourseRepository campusesCourseRepository;
     private final FileStorageService fileStorageService;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
             UserValidator userValidator,
+            AcademicProfileRepository academicProfileRepository,
+            CampusesCourseRepository campusesCourseRepository,
             FileStorageService fileStorageService
     ) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.userValidator = userValidator;
+        this.academicProfileRepository = academicProfileRepository;
+        this.campusesCourseRepository = campusesCourseRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -45,6 +55,23 @@ public class UserService {
         user.setAccountStatus(AccountStatus.PENDING_VERIFICATION);
 
         User savedUser = userRepository.save(user);
+
+        CampusCourse campusCourse = campusesCourseRepository.findById(requestDTO.getCampusCourseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Campus course not found with id: " +
+                        requestDTO.getCampusCourseId()));
+
+        AcademicProfile academicProfile = AcademicProfile.builder()
+                .user(savedUser)
+                .campusCourse(campusCourse)
+                .entryYear(requestDTO.getEntryYear())
+                .conclusionYear(requestDTO.getConclusionYear())
+                .build();
+
+        AcademicProfile savedAcademicProfile = academicProfileRepository.save(academicProfile);
+
+        if (savedUser.getAcademicProfiles() != null) {
+            savedUser.getAcademicProfiles().add(savedAcademicProfile);
+        }
 
         return userMapper.toSimpleDTO(savedUser);
     }

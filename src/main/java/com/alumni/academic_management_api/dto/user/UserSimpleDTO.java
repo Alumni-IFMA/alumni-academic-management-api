@@ -1,6 +1,5 @@
 package com.alumni.academic_management_api.dto.user;
 
-import com.alumni.academic_management_api.entity.AcademicProfile;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,8 +27,7 @@ public class UserSimpleDTO implements Serializable {
     @Schema(description = "E-mail", example = "joao@example.com")
     String email;
 
-    @Schema(description = "Perfis acadêmicos vinculados ao usuário")
-    List<AcademicProfile> academicProfiles;
+    List<AcademicProfileResponseDTO> academicProfiles;
 
     @Schema(description = "Status da conta: ACTIVE, INACTIVE ou PENDING")
     AccountStatus status;

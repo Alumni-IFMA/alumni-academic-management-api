@@ -52,7 +52,7 @@ public class AuthService {
     @Transactional
     public void generatePasswordResetToken(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("E-mail not found"));
+                .orElseThrow(() -> new BusinessException("Email not found"));
 
         tokenRepository.deleteByUser(user);
         tokenRepository.flush();
@@ -73,7 +73,7 @@ public class AuthService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new InvalidTokenException("Invalid is token or not found"));
+                .orElseThrow(() -> new InvalidTokenException("Invalid token or not found"));
 
         if (resetToken.isExpired()){
            tokenRepository.delete(resetToken);

@@ -1,8 +1,12 @@
 package com.alumni.academic_management_api.controller;
 
+import com.alumni.academic_management_api.dto.auth.ForgotPasswordRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
+import com.alumni.academic_management_api.dto.auth.ResetPasswordRequestDTO;
+import com.alumni.academic_management_api.entity.PasswordResetToken;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.repository.PasswordResetTokenRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +20,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -45,10 +51,14 @@ class AuthControllerIT {
     private UserRepository userRepository;
 
     @Autowired
+    private PasswordResetTokenRepository tokenRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        tokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -104,6 +114,95 @@ class AuthControllerIT {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(INVALID_CREDENTIALS_MESSAGE));
+        }
+    }
+
+    @Nested
+    class ForgotPassword {
+        private static final String URL_FORGOT = "/auth/forgot-password";
+
+        @Test
+        void givenValidEmail_whenForgotPassword_thenReturnOk() throws Exception {
+            User user = User.builder()
+                    .name(USER_NAME)
+                    .cpf("33333333333")
+                    .email(USER_EMAIL)
+                    .password(passwordEncoder.encode(VALID_PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .build();
+            userRepository.save(user);
+
+            ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO(USER_EMAIL);
+
+            mockMvc.perform(post(URL_FORGOT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        void givenNotFoundEmail_whenForgotPassword_thenReturnBadRequest() throws Exception {
+            ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO("notfound@email.com");
+
+            mockMvc.perform(post(URL_FORGOT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("Email not found"));
+        }
+
+        @Test
+        void givenInvalidEmailFormat_whenForgotPassword_thenReturnBadRequest() throws Exception {
+            ForgotPasswordRequestDTO request = new ForgotPasswordRequestDTO("invalid-format");
+
+            mockMvc.perform(post(URL_FORGOT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    class ResetPassword {
+
+        private static final String URL_RESET = "/auth/reset-password";
+
+        @Test
+        void givenValidTokenAndStrongPassword_whenResetPassword_thenReturnOk() throws Exception {
+            User user = User.builder()
+                    .name(USER_NAME)
+                    .cpf("44444444444")
+                    .email(USER_EMAIL)
+                    .password(passwordEncoder.encode(VALID_PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .build();
+            userRepository.save(user);
+
+            String token = "uuid-valid-token-123";
+            PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                    .token(token)
+                    .user(user)
+                    .expiryDate(LocalDateTime.now().plusHours(1))
+                    .build();
+            tokenRepository.save(passwordResetToken);
+
+            ResetPasswordRequestDTO request = new ResetPasswordRequestDTO(token, "NovaSenhaSegura123");
+
+            mockMvc.perform(post(URL_RESET)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        void givenWeakPassword_whenResetPassword_thenReturnBadRequest() throws Exception {
+            ResetPasswordRequestDTO request = new ResetPasswordRequestDTO("some-token", "123");
+
+            mockMvc.perform(post(URL_RESET)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string("A nova senha deve ter no mínimo 6 caracteres"));
         }
     }
 }

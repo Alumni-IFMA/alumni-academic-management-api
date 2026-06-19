@@ -22,7 +22,7 @@ public class ResetPasswordRequestDTO implements Serializable {
     private String token;
 
     @NotBlank(message = "A nova senha não pode estar em branco")
-    @Size(min = 8, message = "A nova senha deve ter no mínimo 8 caracteres")
+    @Size(min = 6, message = "A nova senha deve ter no mínimo 6 caracteres")
     @Schema(description = "A nova senha desejada pelo usuário", format = "password")
     private String newPassword;
 }

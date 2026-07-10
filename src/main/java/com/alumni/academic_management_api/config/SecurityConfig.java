@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/news/*/cover-image").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/news/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/news/**").hasRole("ADMIN")
+                        .requestMatchers("/connections/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

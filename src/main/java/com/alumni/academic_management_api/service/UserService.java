@@ -30,6 +30,7 @@ public class UserService {
     private final AcademicProfileRepository academicProfileRepository;
     private final CampusesCourseRepository campusesCourseRepository;
     private final FileStorageService fileStorageService;
+    private final EmailService emailService;
 
     public UserService(
             UserRepository userRepository,
@@ -37,7 +38,8 @@ public class UserService {
             UserValidator userValidator,
             AcademicProfileRepository academicProfileRepository,
             CampusesCourseRepository campusesCourseRepository,
-            FileStorageService fileStorageService
+            FileStorageService fileStorageService,
+            EmailService emailService
     ) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
@@ -45,6 +47,7 @@ public class UserService {
         this.academicProfileRepository = academicProfileRepository;
         this.campusesCourseRepository = campusesCourseRepository;
         this.fileStorageService = fileStorageService;
+        this.emailService = emailService;
     }
 
     public UserSimpleDTO createUser(RegisterRequestDTO requestDTO) {
@@ -120,6 +123,20 @@ public class UserService {
 
         targetUser.setRole(newRole);
         User savedUser = userRepository.save(targetUser);
+        return userMapper.toSimpleDTO(savedUser);
+    }
+
+    public UserSimpleDTO approveUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        if (user.getAccountStatus() != AccountStatus.PENDING_VERIFICATION) {
+            throw new BusinessException("Only pending verification accounts can be approved");
+        }
+
+        user.setAccountStatus(AccountStatus.ACTIVE);
+        User savedUser = userRepository.save(user);
+        emailService.sendApprovalEmail(savedUser.getEmail(), savedUser.getName());
         return userMapper.toSimpleDTO(savedUser);
     }
 }

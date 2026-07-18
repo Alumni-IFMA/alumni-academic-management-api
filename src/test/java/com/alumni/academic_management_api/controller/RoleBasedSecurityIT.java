@@ -220,4 +220,83 @@ class RoleBasedSecurityIT {
                     .andExpect(status().isNotFound());
         }
     }
+
+    @Nested
+    class ApproveUser {
+
+        private static final String URL = "/auth/users/{id}/approve";
+
+        @Test
+        void givenNoToken_whenApproveUser_thenReturn401() throws Exception {
+            mockMvc.perform(patch(URL, 1L))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void givenAdminToken_whenApprovePendingUser_thenReturn200AndStatusActive() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "88888888881");
+
+            User target = userRepository.save(User.builder()
+                    .name("Pending User")
+                    .cpf("88888888882")
+                    .email("pending@test.com")
+                    .password(passwordEncoder.encode(PASSWORD))
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(patch(URL, target.getId())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+            User updatedUser = userRepository.findById(target.getId()).orElseThrow();
+            assertThat(updatedUser.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
+        }
+
+        @Test
+        void givenAdminToken_whenApproveAlreadyActiveUser_thenReturn400() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "88888888883");
+
+            User target = userRepository.save(User.builder()
+                    .name("Active User")
+                    .cpf("88888888884")
+                    .email("active@test.com")
+                    .password(passwordEncoder.encode(PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(patch(URL, target.getId())
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void givenAlumniToken_whenApproveUser_thenReturn403() throws Exception {
+            String alumniToken = loginAndGetToken("alumni@test.com", Role.ALUMNI, "88888888885");
+
+            User target = userRepository.save(User.builder()
+                    .name("Pending User 2")
+                    .cpf("88888888886")
+                    .email("pending2@test.com")
+                    .password(passwordEncoder.encode(PASSWORD))
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(patch(URL, target.getId())
+                            .header("Authorization", "Bearer " + alumniToken))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void givenAdminToken_whenApproveNonExistentUser_thenReturn404() throws Exception {
+            String adminToken = loginAndGetToken("admin@test.com", Role.ADMIN, "88888888887");
+
+            mockMvc.perform(patch(URL, 999999L)
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isNotFound());
+        }
+    }
 }

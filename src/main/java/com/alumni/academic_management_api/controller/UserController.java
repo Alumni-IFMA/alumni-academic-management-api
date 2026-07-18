@@ -147,4 +147,23 @@ public class UserController {
         UserSimpleDTO response = userService.updateUserRole(id, request.getRole(), userDetails.getUsername());
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/users/{id}/approve")
+    @Operation(summary = "Aprovar cadastro de usuário", description = "Acesso restrito a administradores.")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Usuário aprovado com sucesso",
+            content = @Content(schema = @Schema(implementation = UserSimpleDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Conta não está pendente de verificação",
+            content = @Content),
+        @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Acesso negado", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
+    })
+    public ResponseEntity<UserSimpleDTO> approveUser(
+            @Parameter(description = "ID do usuário") @PathVariable Long id) {
+        log.debug("REST request to approve user: {}", id);
+        UserSimpleDTO response = userService.approveUser(id);
+        return ResponseEntity.ok(response);
+    }
 }

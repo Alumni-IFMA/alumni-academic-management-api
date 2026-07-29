@@ -1,7 +1,9 @@
 package com.alumni.academic_management_api.controller;
 
+import com.alumni.academic_management_api.dto.auth.ForgotPasswordRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
+import com.alumni.academic_management_api.dto.auth.ResetPasswordRequestDTO;
 import com.alumni.academic_management_api.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,4 +46,35 @@ public class AuthController {
         LoginResponseDTO response = authService.login(request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Solicitar recuperação de senha", description = "Gera um token de recuperação e " +
+            "envia para o email do usuário.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Solicitação processada com sucesso",
+                    content = @Content),
+            @ApiResponse(responseCode = "400", description = "Email com formato inválido",
+                    content = @Content)
+    })
+    public ResponseEntity<Void> forgotPasssword(@RequestBody @Valid ForgotPasswordRequestDTO request){
+        log.debug("REST request to recover password");
+        authService.generatePasswordResetToken(request.getEmail());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Redefinir senha", description = "Valida o token e atualiza a senha no banco de dados.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Senha redefinida com sucesso",
+                    content = @Content),
+            @ApiResponse(responseCode = "400", description = "Token inválido, expirado ou " +
+                    "formato de requisição incorreto",
+                    content = @Content)
+    })
+    public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequestDTO request) {
+        log.debug("REST request to reset password");
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
+
 }

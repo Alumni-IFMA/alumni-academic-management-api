@@ -7,6 +7,8 @@ COPY gradlew .
 COPY build.gradle settings.gradle ./
 COPY src ./src
 
+RUN chmod +x gradlew
+
 # Build sem daemon (mais rápido no Docker)
 RUN ./gradlew clean bootJar --no-daemon
 

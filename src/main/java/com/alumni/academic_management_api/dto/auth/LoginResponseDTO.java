@@ -15,4 +15,7 @@ public class LoginResponseDTO implements Serializable {
 
     @Schema(description = "Token Bearer JWT", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     private String token;
+
+    @Schema(description = "Identificador do usuário autenticado", example = "42")
+    private Long id;
 }

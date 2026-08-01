@@ -50,6 +50,9 @@ class UserServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private UserService userService;
 
@@ -328,6 +331,92 @@ class UserServiceTest {
             assertThatThrownBy(() -> userService.updateUserRole(99L, Role.ADMIN, "admin@test.com"))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("99");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
+
+    @Nested
+    class ApproveUser {
+
+        @Test
+        void givenPendingUser_whenApproveUser_thenSetsActiveAndSendsEmail() {
+            Long userId = 1L;
+            User user = User.builder()
+                    .id(userId)
+                    .name("João")
+                    .email("joao@email.com")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .build();
+
+            UserSimpleDTO expectedDTO = new UserSimpleDTO(
+                    userId,
+                    "João",
+                    "joao@email.com",
+                    List.of(),
+                    AccountStatus.ACTIVE,
+                    Role.ALUMNI
+            );
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            Mockito.when(userRepository.save(user)).thenReturn(user);
+            Mockito.when(userMapper.toSimpleDTO(user)).thenReturn(expectedDTO);
+
+            UserSimpleDTO result = userService.approveUser(userId);
+
+            assertThat(result.getStatus()).isEqualTo(AccountStatus.ACTIVE);
+            assertThat(user.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
+            Mockito.verify(userRepository).save(user);
+            Mockito.verify(emailService).sendApprovalEmail("joao@email.com", "João");
+        }
+
+        @Test
+        void givenNonExistentUser_whenApproveUser_thenThrowsResourceNotFoundException() {
+            Mockito.when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.approveUser(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+            Mockito.verify(emailService, Mockito.never()).sendApprovalEmail(Mockito.any(), Mockito.any());
+        }
+
+        @Test
+        void givenActiveUser_whenApproveUser_thenThrowsBusinessException() {
+            Long userId = 2L;
+            User user = User.builder()
+                    .id(userId)
+                    .name("Maria")
+                    .email("maria@email.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .build();
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.approveUser(userId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Only pending verification accounts can be approved");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+            Mockito.verify(emailService, Mockito.never()).sendApprovalEmail(Mockito.any(), Mockito.any());
+        }
+
+        @Test
+        void givenSuspendedUser_whenApproveUser_thenThrowsBusinessException() {
+            Long userId = 3L;
+            User user = User.builder()
+                    .id(userId)
+                    .name("Pedro")
+                    .email("pedro@email.com")
+                    .accountStatus(AccountStatus.SUSPENDED)
+                    .build();
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.approveUser(userId))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Only pending verification accounts can be approved");
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
         }

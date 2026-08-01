@@ -53,6 +53,7 @@ class AuthServiceTest {
             String email = "user@email.com";
             LoginRequestDTO request = new LoginRequestDTO(email, "12345678");
             User user = User.builder()
+                    .id(42L)
                     .email(email)
                     .password("encrypted")
                     .build();
@@ -68,6 +69,7 @@ class AuthServiceTest {
 
             assertThat(response).isNotNull();
             assertThat(response.getToken()).isEqualTo("jwt-token");
+            assertThat(response.getId()).isEqualTo(42L);
         }
 
         @Test

@@ -71,4 +71,16 @@ public class DegreeService {
                 .map(degreeMapper::toResponseDTO)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public String generateDownloadUrl(Long degreeId, String email) {
+        Degree degree = degreeRepository.findById(degreeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Degree not found with id: " + degreeId));
+
+        if (!degree.getUser().getEmail().equals(email)) {
+            throw new BusinessException("Degree does not belong to the authenticated user");
+        }
+
+        return fileStorageService.generatePresignedUrl(degree.getFileUrl(), 15);
+    }
 }

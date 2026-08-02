@@ -160,4 +160,51 @@ class DegreeServiceTest {
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
+
+    @Nested
+    class GenerateDownloadUrl {
+
+        @Test
+        void givenOwnedDegree_whenGenerateDownloadUrl_thenReturnPresignedUrl() {
+            String email = "user@email.com";
+            User owner = User.builder().id(1L).email(email).build();
+            Degree degree = Degree.builder()
+                    .id(5L)
+                    .fileUrl("http://localhost:9000/alumni-files/diplomas/uuid.pdf")
+                    .user(owner)
+                    .build();
+            String presignedUrl = "http://localhost:9000/alumni-files/diplomas/uuid.pdf?X-Amz-Signature=xyz";
+
+            Mockito.when(degreeRepository.findById(5L)).thenReturn(Optional.of(degree));
+            Mockito.when(fileStorageService.generatePresignedUrl(degree.getFileUrl(), 15))
+                    .thenReturn(presignedUrl);
+
+            String result = degreeService.generateDownloadUrl(5L, email);
+
+            assertThat(result).isEqualTo(presignedUrl);
+        }
+
+        @Test
+        void givenNonExistentDegree_whenGenerateDownloadUrl_thenThrowResourceNotFoundException() {
+            Mockito.when(degreeRepository.findById(999L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> degreeService.generateDownloadUrl(999L, "user@email.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
+        }
+
+        @Test
+        void givenDegreeOwnedByAnotherUser_whenGenerateDownloadUrl_thenThrowBusinessException() {
+            User owner = User.builder().id(1L).email("owner@email.com").build();
+            Degree degree = Degree.builder().id(5L).fileUrl("http://localhost:9000/x.pdf").user(owner).build();
+
+            Mockito.when(degreeRepository.findById(5L)).thenReturn(Optional.of(degree));
+
+            assertThatThrownBy(() -> degreeService.generateDownloadUrl(5L, "someone-else@email.com"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("Degree does not belong to the authenticated user");
+
+            Mockito.verifyNoInteractions(fileStorageService);
+        }
+    }
 }

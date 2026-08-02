@@ -18,6 +18,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,6 +115,49 @@ class DegreeServiceTest {
                     .hasMessageContaining("999");
 
             Mockito.verifyNoInteractions(fileStorageService, degreeRepository);
+        }
+    }
+
+    @Nested
+    class FindByAuthenticatedUser {
+
+        @Test
+        void givenUserWithDegrees_whenFindByAuthenticatedUser_thenReturnMappedList() {
+            String email = "user@email.com";
+            User user = User.builder().id(1L).email(email).build();
+            Degree degree = Degree.builder().id(5L).title("Bacharelado").user(user).build();
+            DegreeResponseDTO responseDTO = DegreeResponseDTO.builder()
+                    .id(5L).title("Bacharelado").userId(1L).build();
+
+            Mockito.when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            Mockito.when(degreeRepository.findByUserId(1L)).thenReturn(List.of(degree));
+            Mockito.when(degreeMapper.toResponseDTO(degree)).thenReturn(responseDTO);
+
+            List<DegreeResponseDTO> result = degreeService.findByAuthenticatedUser(email);
+
+            assertThat(result).containsExactly(responseDTO);
+        }
+
+        @Test
+        void givenUserWithNoDegrees_whenFindByAuthenticatedUser_thenReturnEmptyList() {
+            String email = "user@email.com";
+            User user = User.builder().id(1L).email(email).build();
+
+            Mockito.when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            Mockito.when(degreeRepository.findByUserId(1L)).thenReturn(List.of());
+
+            List<DegreeResponseDTO> result = degreeService.findByAuthenticatedUser(email);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void givenNonExistentEmail_whenFindByAuthenticatedUser_thenThrowResourceNotFoundException() {
+            String email = "missing@email.com";
+            Mockito.when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> degreeService.findByAuthenticatedUser(email))
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 }

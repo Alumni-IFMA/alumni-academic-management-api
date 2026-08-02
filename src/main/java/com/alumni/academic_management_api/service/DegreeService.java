@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Transactional
 @Service
 public class DegreeService {
@@ -58,5 +60,15 @@ public class DegreeService {
         if (!"application/pdf".equals(file.getContentType())) {
             throw new BusinessException("Only PDF files are allowed");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DegreeResponseDTO> findByAuthenticatedUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        return degreeRepository.findByUserId(user.getId()).stream()
+                .map(degreeMapper::toResponseDTO)
+                .toList();
     }
 }

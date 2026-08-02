@@ -1,0 +1,119 @@
+package com.alumni.academic_management_api.service;
+
+import com.alumni.academic_management_api.dto.degree.DegreeRequestDTO;
+import com.alumni.academic_management_api.dto.degree.DegreeResponseDTO;
+import com.alumni.academic_management_api.entity.Degree;
+import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.exception.BusinessException;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
+import com.alumni.academic_management_api.mapper.DegreeMapper;
+import com.alumni.academic_management_api.repository.DegreeRepository;
+import com.alumni.academic_management_api.repository.UserRepository;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+
+@ExtendWith(MockitoExtension.class)
+class DegreeServiceTest {
+
+    @Mock
+    private DegreeRepository degreeRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private DegreeMapper degreeMapper;
+
+    @Mock
+    private FileStorageService fileStorageService;
+
+    @InjectMocks
+    private DegreeService degreeService;
+
+    @Nested
+    class Upload {
+
+        @Test
+        void givenValidPdfAndExistingUser_whenUpload_thenSaveDegreeAndReturnResponse() {
+            Long userId = 1L;
+            User user = User.builder().id(userId).build();
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "diploma.pdf", "application/pdf", new byte[]{1, 2, 3}
+            );
+            DegreeRequestDTO request = DegreeRequestDTO.builder()
+                    .userId(userId)
+                    .title("Bacharelado em Ciência da Computação")
+                    .file(file)
+                    .build();
+            String fileUrl = "http://localhost:9000/alumni-files/diplomas/uuid.pdf";
+            DegreeResponseDTO expectedResponse = DegreeResponseDTO.builder()
+                    .id(10L)
+                    .title(request.getTitle())
+                    .userId(userId)
+                    .fileUrl(fileUrl)
+                    .build();
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_DIPLOMAS))
+                    .thenReturn(fileUrl);
+            Mockito.when(degreeRepository.save(any(Degree.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            Mockito.when(degreeMapper.toResponseDTO(any(Degree.class))).thenReturn(expectedResponse);
+
+            DegreeResponseDTO result = degreeService.upload(request);
+
+            assertThat(result).isEqualTo(expectedResponse);
+            Mockito.verify(fileStorageService).uploadFile(file, FileStorageService.FOLDER_DIPLOMAS);
+        }
+
+        @Test
+        void givenNonPdfFile_whenUpload_thenThrowBusinessException() {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "diploma.jpg", "image/jpeg", new byte[]{1}
+            );
+            DegreeRequestDTO request = DegreeRequestDTO.builder()
+                    .userId(1L)
+                    .title("Bacharelado em Ciência da Computação")
+                    .file(file)
+                    .build();
+
+            assertThatThrownBy(() -> degreeService.upload(request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("Only PDF files are allowed");
+
+            Mockito.verifyNoInteractions(userRepository, fileStorageService, degreeRepository);
+        }
+
+        @Test
+        void givenNonExistentUser_whenUpload_thenThrowResourceNotFoundException() {
+            Long userId = 999L;
+            MockMultipartFile file = new MockMultipartFile(
+                    "file", "diploma.pdf", "application/pdf", new byte[]{1}
+            );
+            DegreeRequestDTO request = DegreeRequestDTO.builder()
+                    .userId(userId)
+                    .title("Bacharelado em Ciência da Computação")
+                    .file(file)
+                    .build();
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> degreeService.upload(request))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
+
+            Mockito.verifyNoInteractions(fileStorageService, degreeRepository);
+        }
+    }
+}

@@ -25,23 +25,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
             @Param("status") ConnectionStatus status
     );
 
-    @Query("""
-            SELECT c FROM Connection c
-            WHERE c.status = 'PENDING'
-            AND c.addressee.id = :userId
-            """)
-    List<Connection> findPendingReceivedByAddresseeId(@Param("userId") Long userId);
+    List<Connection> findByStatusAndAddresseeId(ConnectionStatus status, Long addresseeId);
 
-    @Query("""
-            SELECT c FROM Connection c
-            WHERE c.status = 'PENDING'
-            AND c.requester.id = :userId
-            """)
-    List<Connection> findPendingSentByRequesterId(@Param("userId") Long userId);
+    List<Connection> findByStatusAndRequesterId(ConnectionStatus status, Long requesterId);
 
-    @Query("""
-            SELECT c FROM Connection c
-            WHERE c.requester.id = :userId OR c.addressee.id = :userId
-            """)
-    List<Connection> findByUserId(@Param("userId") Long userId);
+    List<Connection> findByRequesterIdOrAddresseeId(Long requesterId, Long addresseeId);
 }

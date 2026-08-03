@@ -8,14 +8,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "Dados de uma conexão entre usuários")
-public class ConnectionResponseDTO {
+public class ConnectionResponseDTO implements Serializable {
 
     @Schema(description = "ID único da conexão", example = "1")
     private Long id;
@@ -30,8 +31,8 @@ public class ConnectionResponseDTO {
     private ConnectionStatus status;
 
     @Schema(description = "Data de criação")
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Schema(description = "Data da última atualização")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 }

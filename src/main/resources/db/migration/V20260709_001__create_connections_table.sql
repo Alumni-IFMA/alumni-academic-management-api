@@ -5,8 +5,8 @@ CREATE TABLE connections (
     user_low_id BIGINT NOT NULL,
     user_high_id BIGINT NOT NULL,
     status VARCHAR(30) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
 
     CONSTRAINT fk_connections_requester
         FOREIGN KEY (requester_id)

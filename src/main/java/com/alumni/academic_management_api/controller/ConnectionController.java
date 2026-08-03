@@ -4,9 +4,6 @@ import com.alumni.academic_management_api.config.OpenApiConfig;
 import com.alumni.academic_management_api.dto.connection.ConnectionRequestDTO;
 import com.alumni.academic_management_api.dto.connection.ConnectionResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
-import com.alumni.academic_management_api.entity.User;
-import com.alumni.academic_management_api.exception.ResourceNotFoundException;
-import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.ConnectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -40,11 +37,9 @@ import java.util.List;
 public class ConnectionController {
 
     private final ConnectionService connectionService;
-    private final UserRepository userRepository;
 
-    public ConnectionController(ConnectionService connectionService, UserRepository userRepository) {
+    public ConnectionController(ConnectionService connectionService) {
         this.connectionService = connectionService;
-        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -63,8 +58,8 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to send connection request to user: {}", request.getAddresseeId());
-        User requester = findAuthenticatedUser(userDetails);
-        ConnectionResponseDTO response = connectionService.sendRequest(requester.getId(), request.getAddresseeId());
+        ConnectionResponseDTO response = connectionService.sendRequest(
+                userDetails.getUsername(), request.getAddresseeId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -82,8 +77,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to list accepted connections");
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(connectionService.findAcceptedConnections(authenticatedUser.getId()));
+        return ResponseEntity.ok(connectionService.findAcceptedConnections(userDetails.getUsername()));
     }
 
     @GetMapping("/pending")
@@ -100,8 +94,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to list pending received connection requests");
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(connectionService.findPendingReceivedRequests(authenticatedUser.getId()));
+        return ResponseEntity.ok(connectionService.findPendingReceivedRequests(userDetails.getUsername()));
     }
 
     @GetMapping("/sent")
@@ -118,8 +111,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to list sent pending connection requests");
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(connectionService.findSentRequests(authenticatedUser.getId()));
+        return ResponseEntity.ok(connectionService.findSentRequests(userDetails.getUsername()));
     }
 
     @GetMapping("/suggestions")
@@ -136,8 +128,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to list connection suggestions");
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(connectionService.findSuggestions(authenticatedUser.getId()));
+        return ResponseEntity.ok(connectionService.findSuggestions(userDetails.getUsername()));
     }
 
     @PatchMapping("/{id}/accept")
@@ -156,8 +147,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to accept connection request: {}", id);
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(connectionService.acceptRequest(id, authenticatedUser.getId()));
+        return ResponseEntity.ok(connectionService.acceptRequest(id, userDetails.getUsername()));
     }
 
     @DeleteMapping("/{id}")
@@ -175,13 +165,7 @@ public class ConnectionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to delete connection: {}", id);
-        User authenticatedUser = findAuthenticatedUser(userDetails);
-        connectionService.deleteConnection(id, authenticatedUser.getId());
+        connectionService.deleteConnection(id, userDetails.getUsername());
         return ResponseEntity.noContent().build();
-    }
-
-    private User findAuthenticatedUser(UserDetails userDetails) {
-        return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

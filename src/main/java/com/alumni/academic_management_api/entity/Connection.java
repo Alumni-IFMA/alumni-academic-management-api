@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -66,14 +66,14 @@ public class Connection {
     private ConnectionStatus status = ConnectionStatus.PENDING;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     void prePersist() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
         normalizeUserPair();
@@ -81,11 +81,11 @@ public class Connection {
 
     @PreUpdate
     void preUpdate() {
-        updatedAt = Instant.now();
+        updatedAt = LocalDateTime.now();
         normalizeUserPair();
     }
 
-    public void normalizeUserPair() {
+    private void normalizeUserPair() {
         Long requesterId = requester.getId();
         Long addresseeId = addressee.getId();
         userLowId = Math.min(requesterId, addresseeId);

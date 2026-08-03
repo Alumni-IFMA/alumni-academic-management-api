@@ -40,7 +40,10 @@ public class ConnectionService {
         this.userMapper = userMapper;
     }
 
-    public ConnectionResponseDTO sendRequest(Long requesterId, Long addresseeId) {
+    public ConnectionResponseDTO sendRequest(String requesterEmail, Long addresseeId) {
+        User requester = findAuthenticatedUser(requesterEmail);
+        Long requesterId = requester.getId();
+
         if (requesterId.equals(addresseeId)) {
             throw new BusinessException("User cannot connect with themselves");
         }
@@ -52,8 +55,6 @@ public class ConnectionService {
                     throw new BusinessException("Connection already exists between these users");
                 });
 
-        User requester = userRepository.findById(requesterId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + requesterId));
         User addressee = userRepository.findById(addresseeId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + addresseeId));
 
@@ -69,11 +70,12 @@ public class ConnectionService {
         return connectionMapper.toResponseDTO(savedConnection);
     }
 
-    public ConnectionResponseDTO acceptRequest(Long connectionId, Long authenticatedUserId) {
+    public ConnectionResponseDTO acceptRequest(Long connectionId, String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
         Connection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Connection not found with id: " + connectionId));
 
-        if (!connection.getAddressee().getId().equals(authenticatedUserId)) {
+        if (!connection.getAddressee().getId().equals(authenticatedUser.getId())) {
             throw new BusinessException("Only the addressee can accept this connection request");
         }
 
@@ -86,12 +88,14 @@ public class ConnectionService {
         return connectionMapper.toResponseDTO(savedConnection);
     }
 
-    public void deleteConnection(Long connectionId, Long authenticatedUserId) {
+    public void deleteConnection(Long connectionId, String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
         Connection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Connection not found with id: " + connectionId));
 
         Long requesterId = connection.getRequester().getId();
         Long addresseeId = connection.getAddressee().getId();
+        Long authenticatedUserId = authenticatedUser.getId();
         if (!requesterId.equals(authenticatedUserId) && !addresseeId.equals(authenticatedUserId)) {
             throw new BusinessException("Only connection participants can delete this connection");
         }
@@ -100,35 +104,36 @@ public class ConnectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionResponseDTO> findAcceptedConnections(Long authenticatedUserId) {
-        findUserById(authenticatedUserId);
-        return connectionRepository.findByUserIdAndStatus(authenticatedUserId, ConnectionStatus.ACCEPTED)
+    public List<ConnectionResponseDTO> findAcceptedConnections(String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
+        return connectionRepository.findByUserIdAndStatus(authenticatedUser.getId(), ConnectionStatus.ACCEPTED)
                 .stream()
                 .map(connectionMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionResponseDTO> findPendingReceivedRequests(Long authenticatedUserId) {
-        findUserById(authenticatedUserId);
-        return connectionRepository.findPendingReceivedByAddresseeId(authenticatedUserId)
+    public List<ConnectionResponseDTO> findPendingReceivedRequests(String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
+        return connectionRepository.findByStatusAndAddresseeId(ConnectionStatus.PENDING, authenticatedUser.getId())
                 .stream()
                 .map(connectionMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionResponseDTO> findSentRequests(Long authenticatedUserId) {
-        findUserById(authenticatedUserId);
-        return connectionRepository.findPendingSentByRequesterId(authenticatedUserId)
+    public List<ConnectionResponseDTO> findSentRequests(String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
+        return connectionRepository.findByStatusAndRequesterId(ConnectionStatus.PENDING, authenticatedUser.getId())
                 .stream()
                 .map(connectionMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<UserSimpleDTO> findSuggestions(Long authenticatedUserId) {
-        User authenticatedUser = findUserById(authenticatedUserId);
+    public List<UserSimpleDTO> findSuggestions(String authenticatedEmail) {
+        User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
+        Long authenticatedUserId = authenticatedUser.getId();
         Set<Long> campusCourseIds = authenticatedUser.getAcademicProfiles()
                 .stream()
                 .map(AcademicProfile::getCampusCourse)
@@ -140,7 +145,8 @@ public class ConnectionService {
             return List.of();
         }
 
-        Set<Long> relatedUserIds = connectionRepository.findByUserId(authenticatedUserId)
+        Set<Long> relatedUserIds = connectionRepository
+                .findByRequesterIdOrAddresseeId(authenticatedUserId, authenticatedUserId)
                 .stream()
                 .map(connection -> getOtherUserId(connection, authenticatedUserId))
                 .collect(Collectors.toSet());
@@ -153,9 +159,9 @@ public class ConnectionService {
                 .toList();
     }
 
-    private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    private User findAuthenticatedUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private Long getOtherUserId(Connection connection, Long authenticatedUserId) {

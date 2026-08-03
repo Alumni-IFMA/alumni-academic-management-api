@@ -107,4 +107,40 @@ class EmailServiceTest {
                     .doesNotThrowAnyException();
         }
     }
+
+    @Nested
+    class SendAccountApprovalEmail {
+
+        @Test
+        void givenValidRecipient_whenSendAccountApprovalEmail_thenCallsMailSenderSend() {
+            when(templateEngine.process(eq("email/account-approval"), any(Context.class)))
+                    .thenReturn("<html><body>Aprovado!</body></html>");
+
+            emailService.sendAccountApprovalEmail("joao@email.com", "João", "abc123token");
+
+            verify(mailSender).send(any(MimeMessage.class));
+        }
+
+        @Test
+        void givenValidRecipient_whenSendAccountApprovalEmail_thenProcessesTemplateWithSetupUrl() {
+            ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+            when(templateEngine.process(eq("email/account-approval"), contextCaptor.capture()))
+                    .thenReturn("<html><body>Aprovado!</body></html>");
+
+            emailService.sendAccountApprovalEmail("joao@email.com", "João", "abc123token");
+
+            Context ctx = contextCaptor.getValue();
+            assertThat(ctx.getVariable("name")).isEqualTo("João");
+            assertThat(ctx.getVariable("setupUrl"))
+                    .isEqualTo("http://localhost:3000/definir-senha?token=abc123token");
+        }
+
+        @Test
+        void givenMailSenderThrowsException_whenSendAccountApprovalEmail_thenDoesNotPropagate() {
+            when(mailSender.createMimeMessage()).thenThrow(new RuntimeException("SMTP error"));
+
+            assertThatCode(() -> emailService.sendAccountApprovalEmail("joao@email.com", "João", "abc123token"))
+                    .doesNotThrowAnyException();
+        }
+    }
 }

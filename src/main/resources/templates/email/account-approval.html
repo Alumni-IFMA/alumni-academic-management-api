@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro Aprovado</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 8px; overflow: hidden; }
+        .header { background-color: #16a34a; padding: 24px 32px; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 20px; }
+        .body { padding: 32px; color: #374151; }
+        .body p { line-height: 1.6; }
+        .button { display: inline-block; margin-top: 24px; padding: 12px 28px; background-color: #16a34a;
+            color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; }
+        .warning { margin-top: 16px; font-size: 13px; color: #6b7280; }
+        .footer { padding: 16px 32px; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Alumni IFMA</h1>
+        </div>
+        <div class="body">
+            <p>Olá, <strong th:text="${name}">Usuário</strong>!</p>
+            <p>Seu cadastro na plataforma <strong>Alumni IFMA</strong> foi <strong>aprovado</strong>.</p>
+            <p>Para acessar a plataforma, defina sua senha clicando no botão abaixo.
+               Este link expira em <strong>48 horas</strong>.</p>
+            <a th:href="${setupUrl}" class="button">Definir minha senha</a>
+            <p class="warning">
+                Se você não reconhece este cadastro, ignore este e-mail.
+            </p>
+        </div>
+        <div class="footer">
+            Este e-mail foi enviado automaticamente. Por favor, não responda.
+        </div>
+    </div>
+</body>
+</html>

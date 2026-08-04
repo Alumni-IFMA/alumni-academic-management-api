@@ -132,7 +132,7 @@ class EmailServiceTest {
             Context ctx = contextCaptor.getValue();
             assertThat(ctx.getVariable("name")).isEqualTo("João");
             assertThat(ctx.getVariable("setupUrl"))
-                    .isEqualTo("http://localhost:3000/definir-senha?token=abc123token");
+                    .isEqualTo("http://localhost:3000/auth/set-password?token=abc123token");
         }
 
         @Test

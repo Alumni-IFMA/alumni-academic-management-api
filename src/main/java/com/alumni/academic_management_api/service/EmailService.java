@@ -67,7 +67,7 @@ public class EmailService {
     @Async
     public void sendAccountApprovalEmail(String to, String name, String rawToken) {
         try {
-            String setupUrl = frontendUrl + "/definir-senha?token="
+            String setupUrl = frontendUrl + "/auth/set-password?token="
                     + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
             Context ctx = new Context();
             ctx.setVariable("name", name);

@@ -53,6 +53,9 @@ class UserServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private PasswordSetupTokenService passwordSetupTokenService;
+
     @InjectMocks
     private UserService userService;
 
@@ -340,7 +343,7 @@ class UserServiceTest {
     class ApproveUser {
 
         @Test
-        void givenPendingUser_whenApproveUser_thenSetsActiveAndSendsEmail() {
+        void givenPendingUser_whenApproveUser_thenSetsActiveAndSendsAccountApprovalEmail() {
             Long userId = 1L;
             User user = User.builder()
                     .id(userId)
@@ -360,6 +363,7 @@ class UserServiceTest {
 
             Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             Mockito.when(userRepository.save(user)).thenReturn(user);
+            Mockito.when(passwordSetupTokenService.generateSetupToken(user)).thenReturn("raw-token-value");
             Mockito.when(userMapper.toSimpleDTO(user)).thenReturn(expectedDTO);
 
             UserSimpleDTO result = userService.approveUser(userId);
@@ -367,7 +371,9 @@ class UserServiceTest {
             assertThat(result.getStatus()).isEqualTo(AccountStatus.ACTIVE);
             assertThat(user.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
             Mockito.verify(userRepository).save(user);
-            Mockito.verify(emailService).sendApprovalEmail("joao@email.com", "João");
+            Mockito.verify(passwordSetupTokenService).generateSetupToken(user);
+            Mockito.verify(emailService)
+                    .sendAccountApprovalEmail("joao@email.com", "João", "raw-token-value");
         }
 
         @Test
@@ -379,7 +385,9 @@ class UserServiceTest {
                     .hasMessageContaining("99");
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
-            Mockito.verify(emailService, Mockito.never()).sendApprovalEmail(Mockito.any(), Mockito.any());
+            Mockito.verify(passwordSetupTokenService, Mockito.never()).generateSetupToken(Mockito.any());
+            Mockito.verify(emailService, Mockito.never())
+                    .sendAccountApprovalEmail(Mockito.any(), Mockito.any(), Mockito.any());
         }
 
         @Test
@@ -399,7 +407,9 @@ class UserServiceTest {
                     .hasMessageContaining("Only pending verification accounts can be approved");
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
-            Mockito.verify(emailService, Mockito.never()).sendApprovalEmail(Mockito.any(), Mockito.any());
+            Mockito.verify(passwordSetupTokenService, Mockito.never()).generateSetupToken(Mockito.any());
+            Mockito.verify(emailService, Mockito.never())
+                    .sendAccountApprovalEmail(Mockito.any(), Mockito.any(), Mockito.any());
         }
 
         @Test
@@ -419,6 +429,7 @@ class UserServiceTest {
                     .hasMessageContaining("Only pending verification accounts can be approved");
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+            Mockito.verify(passwordSetupTokenService, Mockito.never()).generateSetupToken(Mockito.any());
         }
     }
 

@@ -4,11 +4,12 @@ import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
 import com.alumni.academic_management_api.entity.PasswordResetToken;
 import com.alumni.academic_management_api.entity.User;
-import com.alumni.academic_management_api.enums.Role;
+import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.InvalidTokenException;
 import com.alumni.academic_management_api.repository.PasswordResetTokenRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
+import com.alumni.academic_management_api.util.TokenHasher;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,32 +44,39 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
     @Nested
     class Login {
         @Test
-        void givenValidCredentials_whenLogin_thenReturnToken() {
+        void givenValidCredentials_whenLogin_thenReturnAccessAndRefreshToken() {
             String email = "user@email.com";
             LoginRequestDTO request = new LoginRequestDTO(email, "12345678");
             User user = User.builder()
                     .id(42L)
                     .email(email)
                     .password("encrypted")
+                    .accountStatus(AccountStatus.ACTIVE)
                     .build();
 
             Mockito.when(userRepository.findByEmail(email))
                     .thenReturn(Optional.of(user));
             Mockito.when(passwordEncoder.matches("12345678", "encrypted"))
                     .thenReturn(true);
-            Mockito.when(jwtService.generateToken(email, Role.ALUMNI))
+            Mockito.when(jwtService.generateToken(email))
                     .thenReturn("jwt-token");
+            Mockito.when(refreshTokenService.generate(user))
+                    .thenReturn("refresh-token");
 
             LoginResponseDTO response = authService.login(request);
 
             assertThat(response).isNotNull();
             assertThat(response.getToken()).isEqualTo("jwt-token");
+            assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
             assertThat(response.getId()).isEqualTo(42L);
         }
 
@@ -91,6 +99,7 @@ class AuthServiceTest {
             User user = User.builder()
                     .email(email)
                     .password("encrypted")
+                    .accountStatus(AccountStatus.ACTIVE)
                     .build();
 
             Mockito.when(userRepository.findByEmail(email))
@@ -101,6 +110,81 @@ class AuthServiceTest {
             assertThatThrownBy(() -> authService.login(request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessage("Invalid email or password");
+        }
+
+        @Test
+        void givenPendingVerificationAccount_whenLogin_thenThrowBusinessException() {
+            String email = "user@email.com";
+            LoginRequestDTO request = new LoginRequestDTO(email, "12345678");
+            User user = User.builder()
+                    .email(email)
+                    .password("encrypted")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION)
+                    .build();
+
+            Mockito.when(userRepository.findByEmail(email))
+                    .thenReturn(Optional.of(user));
+            Mockito.when(passwordEncoder.matches("12345678", "encrypted"))
+                    .thenReturn(true);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("Account is pending approval");
+
+            Mockito.verify(refreshTokenService, Mockito.never()).generate(Mockito.any());
+        }
+
+        @Test
+        void givenSuspendedAccount_whenLogin_thenThrowBusinessException() {
+            String email = "user@email.com";
+            LoginRequestDTO request = new LoginRequestDTO(email, "12345678");
+            User user = User.builder()
+                    .email(email)
+                    .password("encrypted")
+                    .accountStatus(AccountStatus.SUSPENDED)
+                    .build();
+
+            Mockito.when(userRepository.findByEmail(email))
+                    .thenReturn(Optional.of(user));
+            Mockito.when(passwordEncoder.matches("12345678", "encrypted"))
+                    .thenReturn(true);
+
+            assertThatThrownBy(() -> authService.login(request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("Account is suspended");
+
+            Mockito.verify(refreshTokenService, Mockito.never()).generate(Mockito.any());
+        }
+    }
+
+    @Nested
+    class RefreshToken {
+
+        @Test
+        void givenValidRefreshToken_whenRefreshToken_thenReturnNewAccessAndRefreshToken() {
+            User user = User.builder().id(7L).email("user@email.com").build();
+
+            Mockito.when(refreshTokenService.rotate("raw-refresh-token"))
+                    .thenReturn(new RefreshTokenService.RotationResult(user, "new-refresh-token"));
+            Mockito.when(jwtService.generateToken("user@email.com"))
+                    .thenReturn("new-jwt-token");
+
+            LoginResponseDTO response = authService.refreshToken("raw-refresh-token");
+
+            assertThat(response.getToken()).isEqualTo("new-jwt-token");
+            assertThat(response.getRefreshToken()).isEqualTo("new-refresh-token");
+            assertThat(response.getId()).isEqualTo(7L);
+        }
+    }
+
+    @Nested
+    class Logout {
+
+        @Test
+        void whenLogout_thenDelegatesToRefreshTokenServiceRevoke() {
+            authService.logout("raw-refresh-token");
+
+            Mockito.verify(refreshTokenService).revoke("raw-refresh-token");
         }
     }
 
@@ -147,12 +231,13 @@ class AuthServiceTest {
             User user = User.builder().email("user@email.com").build();
 
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .token(token)
+                    .tokenHash(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().plusHours(1))
                     .build();
 
-            Mockito.when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+                    .thenReturn(Optional.of(passwordResetToken));
             Mockito.when(passwordEncoder.encode(newPassword)).thenReturn("encoded-new-password");
 
             authService.resetPassword(token, newPassword);
@@ -160,13 +245,15 @@ class AuthServiceTest {
             assertThat(user.getPassword()).isEqualTo("encoded-new-password");
             Mockito.verify(userRepository).save(user);
             Mockito.verify(passwordResetTokenRepository).delete(passwordResetToken);
+            Mockito.verify(refreshTokenService).revokeAllForUser(user);
         }
 
         @Test
         void givenInvalidToken_whenResetPassword_thenThrowInvalidTokenException() {
             String token = "invalid-token";
 
-            Mockito.when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.empty());
+            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+                    .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.resetPassword(token, "password123"))
                     .isInstanceOf(InvalidTokenException.class)
@@ -181,12 +268,13 @@ class AuthServiceTest {
             User user = User.builder().email("user@email.com").build();
 
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .token(token)
+                    .tokenHash(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().minusMinutes(10))
                     .build();
 
-            Mockito.when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+                    .thenReturn(Optional.of(passwordResetToken));
 
             assertThatThrownBy(() -> authService.resetPassword(token, "password123"))
                     .isInstanceOf(InvalidTokenException.class)

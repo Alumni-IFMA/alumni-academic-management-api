@@ -67,6 +67,7 @@ test {
 	systemProperty "spring.datasource.driver-class-name", "org.h2.Driver"
 	systemProperty "security.jwt.secret", "test-secret-key-with-at-least-32-characters"
 	systemProperty "security.jwt.expiration-ms", "3600000"
+	systemProperty "security.jwt.refresh-expiration-ms", "604800000"
 }
 
 check.dependsOn jacocoTestReport

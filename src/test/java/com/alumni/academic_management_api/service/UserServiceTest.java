@@ -334,6 +334,62 @@ class UserServiceTest {
 
             Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
         }
+
+        @Test
+        void givenLastRemainingAdmin_whenDemotedByAnotherAdmin_thenThrowBusinessException() {
+            Long targetId = 2L;
+            String authenticatedAdminEmail = "admin@test.com";
+
+            User targetAdmin = User.builder()
+                    .name("Target Admin")
+                    .email("target-admin@test.com")
+                    .cpf("22222222200")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ADMIN)
+                    .build();
+
+            Mockito.when(userRepository.findById(targetId)).thenReturn(Optional.of(targetAdmin));
+            Mockito.when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+            assertThatThrownBy(() -> userService.updateUserRole(targetId, Role.ALUMNI, authenticatedAdminEmail))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("last remaining admin");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+
+        @Test
+        void givenMultipleAdmins_whenDemotingOneOfThem_thenReturnUpdatedUser() {
+            Long targetId = 2L;
+            String authenticatedAdminEmail = "admin@test.com";
+
+            User targetAdmin = User.builder()
+                    .name("Target Admin")
+                    .email("target-admin@test.com")
+                    .cpf("22222222200")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ADMIN)
+                    .build();
+
+            UserSimpleDTO expectedDTO = new UserSimpleDTO(
+                    targetId,
+                    "Target Admin",
+                    "target-admin@test.com",
+                    List.of(),
+                    AccountStatus.ACTIVE,
+                    Role.ALUMNI
+            );
+
+            Mockito.when(userRepository.findById(targetId)).thenReturn(Optional.of(targetAdmin));
+            Mockito.when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
+            Mockito.when(userRepository.save(targetAdmin)).thenReturn(targetAdmin);
+            Mockito.when(userMapper.toSimpleDTO(targetAdmin)).thenReturn(expectedDTO);
+
+            UserSimpleDTO result = userService.updateUserRole(targetId, Role.ALUMNI, authenticatedAdminEmail);
+
+            assertThat(result.getRole()).isEqualTo(Role.ALUMNI);
+            Mockito.verify(userRepository).save(targetAdmin);
+        }
     }
 
     @Nested

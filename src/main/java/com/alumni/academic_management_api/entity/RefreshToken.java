@@ -7,7 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,14 +19,14 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "forgot_password")
+@Table(name = "refresh_tokens")
 @ToString(onlyExplicitlyIncluded = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder(toBuilder = true)
 @Getter
 @Setter
-public class PasswordResetToken {
+public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +36,7 @@ public class PasswordResetToken {
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 
-    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @ManyToOne(targetEntity = User.class, fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, name = "user_id")
     private User user;
 
@@ -44,8 +44,15 @@ public class PasswordResetToken {
     @ToString.Include
     private LocalDateTime expiryDate;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean revoked = false;
+
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiryDate);
     }
 
+    public boolean isValid() {
+        return !revoked && !isExpired();
+    }
 }

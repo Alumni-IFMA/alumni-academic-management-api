@@ -1,6 +1,8 @@
 package com.alumni.academic_management_api.config;
 
 import com.alumni.academic_management_api.service.JwtService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,17 +45,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String token = authHeader.substring(7);
 
         try {
-            String email = jwtService.extractEmail(token);
+            Claims claims = jwtService.parseClaims(token);
+            String email = claims.getSubject();
 
-            if (email == null || SecurityContextHolder.getContext().getAuthentication() != null) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            if (!jwtService.isTokenValid(token)) {
+            if (email == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -70,8 +73,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authToken);
             SecurityContextHolder.setContext(context);
-        } catch (Exception ex) {
-            log.debug("Failed to authenticate request with JWT token", ex);
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.warn("Rejected request with invalid JWT token: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);

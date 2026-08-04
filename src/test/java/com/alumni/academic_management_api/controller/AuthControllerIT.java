@@ -2,12 +2,16 @@ package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.auth.ForgotPasswordRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
+import com.alumni.academic_management_api.dto.auth.RefreshTokenRequestDTO;
 import com.alumni.academic_management_api.dto.auth.ResetPasswordRequestDTO;
 import com.alumni.academic_management_api.entity.PasswordResetToken;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.repository.PasswordResetTokenRepository;
+import com.alumni.academic_management_api.repository.RefreshTokenRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
+import com.alumni.academic_management_api.util.TokenHasher;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -54,11 +58,15 @@ class AuthControllerIT {
     private PasswordResetTokenRepository tokenRepository;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
         tokenRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -115,6 +123,92 @@ class AuthControllerIT {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(INVALID_CREDENTIALS_MESSAGE));
+        }
+    }
+
+    @Nested
+    class Refresh {
+
+        private static final String URL_REFRESH = "/auth/refresh";
+        private static final String URL_LOGOUT = "/auth/logout";
+
+        private String login(String cpf, String email) throws Exception {
+            User user = User.builder()
+                    .name(USER_NAME)
+                    .cpf(cpf)
+                    .email(email)
+                    .password(passwordEncoder.encode(VALID_PASSWORD))
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .build();
+            userRepository.save(user);
+
+            LoginRequestDTO request = new LoginRequestDTO(email, VALID_PASSWORD);
+
+            String body = mockMvc.perform(post(URL)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            JsonNode json = objectMapper.readTree(body);
+            return json.get("refreshToken").asText();
+        }
+
+        @Test
+        void givenValidRefreshToken_whenRefresh_thenReturnNewAccessAndRefreshToken() throws Exception {
+            String refreshToken = login("55555555555", "refresh1@email.com");
+
+            RefreshTokenRequestDTO request = new RefreshTokenRequestDTO(refreshToken);
+
+            mockMvc.perform(post(URL_REFRESH)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.token").isNotEmpty())
+                    .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                    .andExpect(jsonPath("$.refreshToken").value(org.hamcrest.Matchers.not(refreshToken)));
+        }
+
+        @Test
+        void givenAlreadyRotatedRefreshToken_whenRefreshAgain_thenReturnUnauthorized() throws Exception {
+            String refreshToken = login("66666666666", "refresh2@email.com");
+            RefreshTokenRequestDTO request = new RefreshTokenRequestDTO(refreshToken);
+
+            mockMvc.perform(post(URL_REFRESH)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post(URL_REFRESH)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void givenInvalidRefreshToken_whenRefresh_thenReturnUnauthorized() throws Exception {
+            RefreshTokenRequestDTO request = new RefreshTokenRequestDTO("not-a-real-token");
+
+            mockMvc.perform(post(URL_REFRESH)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void givenLoggedOutRefreshToken_whenRefresh_thenReturnUnauthorized() throws Exception {
+            String refreshToken = login("77777777777", "refresh3@email.com");
+            RefreshTokenRequestDTO request = new RefreshTokenRequestDTO(refreshToken);
+
+            mockMvc.perform(post(URL_LOGOUT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post(URL_REFRESH)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -181,7 +275,7 @@ class AuthControllerIT {
 
             String token = "uuid-valid-token-123";
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .token(token)
+                    .tokenHash(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().plusHours(1))
                     .build();

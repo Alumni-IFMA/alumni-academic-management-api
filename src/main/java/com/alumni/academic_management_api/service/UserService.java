@@ -121,6 +121,11 @@ public class UserService {
             throw new BusinessException("Admin cannot change their own role");
         }
 
+        if (targetUser.getRole() == Role.ADMIN && newRole != Role.ADMIN
+                && userRepository.countByRole(Role.ADMIN) <= 1) {
+            throw new BusinessException("Cannot remove the last remaining admin");
+        }
+
         targetUser.setRole(newRole);
         User savedUser = userRepository.save(targetUser);
         return userMapper.toSimpleDTO(savedUser);

@@ -1,7 +1,7 @@
 package com.alumni.academic_management_api.service;
 
-import com.alumni.academic_management_api.enums.Role;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -17,57 +17,47 @@ import java.util.Date;
 @Slf4j
 public class JwtService {
 
-    private final String secret;
+    private static final int MIN_SECRET_BYTES = 32;
+
+    private final SecretKey signInKey;
     private final long expirationMs;
 
     public JwtService(
             @Value("${security.jwt.secret}") String secret,
             @Value("${security.jwt.expiration-ms}") long expirationMs
     ) {
-        this.secret = secret;
+        int secretLength = secret == null ? 0 : secret.getBytes(StandardCharsets.UTF_8).length;
+        if (secretLength < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "security.jwt.secret must be at least " + MIN_SECRET_BYTES +
+                            " bytes long for HS256 signing, but was " + secretLength + " bytes");
+        }
+        this.signInKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String email, Role role) {
+    public String generateToken(String email) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setSubject(email)
-                .claim("role", role.name())
                 .setIssuedAt(now)
                 .setExpiration(expiration)
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .signWith(signInKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    public Role extractRole(String token) {
-        String roleName = extractAllClaims(token).get("role", String.class);
-        return Role.valueOf(roleName);
-    }
-
-    public boolean isTokenValid(String token) {
-        try {
-            return extractAllClaims(token).getExpiration().after(new Date());
-        } catch (Exception ex) {
-            log.warn("Failed to validate JWT token", ex);
-            return false;
-        }
-    }
-
-    private Claims extractAllClaims(String token) {
+    /**
+     * Parses and fully validates (signature + expiration) the token in a single pass.
+     * Throws {@link JwtException} (e.g. ExpiredJwtException, SignatureException,
+     * MalformedJwtException) if the token is invalid in any way.
+     */
+    public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSignInKey())
+                .setSigningKey(signInKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 }

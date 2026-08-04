@@ -1,0 +1,1 @@
+ALTER TABLE forgot_password RENAME COLUMN token TO token_hash;

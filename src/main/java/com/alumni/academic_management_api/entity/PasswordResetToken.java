@@ -33,8 +33,8 @@ public class PasswordResetToken {
     @ToString.Include
     private Long id;
 
-    @Column(name = "token_hash", nullable = false, unique = true)
-    private String tokenHash;
+    @Column(nullable = false, unique = true)
+    private String token;
 
     @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "user_id")

@@ -91,7 +91,7 @@ public class AuthService {
         PasswordResetToken passwordResetToken = PasswordResetToken.builder()
                 .expiryDate(LocalDateTime.now().plusHours(1))
                 .user(user)
-                .tokenHash(TokenHasher.sha256(rawToken))
+                .token(TokenHasher.sha256(rawToken))
                 .build();
 
         tokenRepository.save(passwordResetToken);
@@ -101,7 +101,7 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(String rawToken, String newPassword) {
-        PasswordResetToken passwordResetToken = tokenRepository.findByTokenHash(TokenHasher.sha256(rawToken))
+        PasswordResetToken passwordResetToken = tokenRepository.findByToken(TokenHasher.sha256(rawToken))
                 .orElseThrow(() -> new InvalidTokenException("Invalid token or not found"));
 
         if (passwordResetToken.isExpired()){

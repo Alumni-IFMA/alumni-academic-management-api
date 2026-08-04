@@ -275,7 +275,7 @@ class AuthControllerIT {
 
             String token = "uuid-valid-token-123";
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .tokenHash(TokenHasher.sha256(token))
+                    .token(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().plusHours(1))
                     .build();

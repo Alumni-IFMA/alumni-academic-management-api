@@ -231,12 +231,12 @@ class AuthServiceTest {
             User user = User.builder().email("user@email.com").build();
 
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .tokenHash(TokenHasher.sha256(token))
+                    .token(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().plusHours(1))
                     .build();
 
-            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+            Mockito.when(passwordResetTokenRepository.findByToken(TokenHasher.sha256(token)))
                     .thenReturn(Optional.of(passwordResetToken));
             Mockito.when(passwordEncoder.encode(newPassword)).thenReturn("encoded-new-password");
 
@@ -252,7 +252,7 @@ class AuthServiceTest {
         void givenInvalidToken_whenResetPassword_thenThrowInvalidTokenException() {
             String token = "invalid-token";
 
-            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+            Mockito.when(passwordResetTokenRepository.findByToken(TokenHasher.sha256(token)))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.resetPassword(token, "password123"))
@@ -268,12 +268,12 @@ class AuthServiceTest {
             User user = User.builder().email("user@email.com").build();
 
             PasswordResetToken passwordResetToken = PasswordResetToken.builder()
-                    .tokenHash(TokenHasher.sha256(token))
+                    .token(TokenHasher.sha256(token))
                     .user(user)
                     .expiryDate(LocalDateTime.now().minusMinutes(10))
                     .build();
 
-            Mockito.when(passwordResetTokenRepository.findByTokenHash(TokenHasher.sha256(token)))
+            Mockito.when(passwordResetTokenRepository.findByToken(TokenHasher.sha256(token)))
                     .thenReturn(Optional.of(passwordResetToken));
 
             assertThatThrownBy(() -> authService.resetPassword(token, "password123"))

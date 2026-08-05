@@ -64,6 +64,21 @@ public class EmailService {
         }
     }
 
+    @Async
+    public void sendAccountApprovalEmail(String to, String name, String rawToken) {
+        try {
+            String setupUrl = frontendUrl + "/auth/set-password?token="
+                    + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+            Context ctx = new Context();
+            ctx.setVariable("name", name);
+            ctx.setVariable("setupUrl", setupUrl);
+            String html = templateEngine.process("email/account-approval", ctx);
+            sendHtmlEmail(to, "Seu cadastro foi aprovado — Alumni IFMA", html);
+        } catch (Exception e) {
+            log.error("Falha ao enviar e-mail de aprovação de cadastro para {}: {}", to, e.getMessage());
+        }
+    }
+
     private void sendHtmlEmail(String to, String subject, String htmlContent) throws Exception {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");

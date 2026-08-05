@@ -31,6 +31,7 @@ public class UserService {
     private final CampusesCourseRepository campusesCourseRepository;
     private final FileStorageService fileStorageService;
     private final EmailService emailService;
+    private final PasswordSetupTokenService passwordSetupTokenService;
 
     public UserService(
             UserRepository userRepository,
@@ -39,7 +40,8 @@ public class UserService {
             AcademicProfileRepository academicProfileRepository,
             CampusesCourseRepository campusesCourseRepository,
             FileStorageService fileStorageService,
-            EmailService emailService
+            EmailService emailService,
+            PasswordSetupTokenService passwordSetupTokenService
     ) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
@@ -48,6 +50,7 @@ public class UserService {
         this.campusesCourseRepository = campusesCourseRepository;
         this.fileStorageService = fileStorageService;
         this.emailService = emailService;
+        this.passwordSetupTokenService = passwordSetupTokenService;
     }
 
     public UserSimpleDTO createUser(RegisterRequestDTO requestDTO) {
@@ -136,7 +139,10 @@ public class UserService {
 
         user.setAccountStatus(AccountStatus.ACTIVE);
         User savedUser = userRepository.save(user);
-        emailService.sendApprovalEmail(savedUser.getEmail(), savedUser.getName());
+
+        String rawToken = passwordSetupTokenService.generateSetupToken(savedUser);
+        emailService.sendAccountApprovalEmail(savedUser.getEmail(), savedUser.getName(), rawToken);
+
         return userMapper.toSimpleDTO(savedUser);
     }
 }

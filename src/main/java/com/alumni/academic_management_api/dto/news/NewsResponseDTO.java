@@ -39,6 +39,9 @@ public class NewsResponseDTO implements Serializable {
     @Schema(description = "Indica se a notícia está ativa/visível")
     private boolean active;
 
+    @Schema(description = "Indica se a notícia é um rascunho visível apenas para administradores")
+    private boolean draft;
+
     @Schema(description = "Data e hora de criação do registro")
     private LocalDateTime createdAt;
 }

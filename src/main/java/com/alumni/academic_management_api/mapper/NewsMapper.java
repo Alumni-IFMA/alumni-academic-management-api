@@ -13,6 +13,7 @@ public interface NewsMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "coverImageUrl", ignore = true)
     News toEntity(NewsRequestDTO dto);
 
     NewsResponseDTO toResponseDTO(News news);
@@ -20,5 +21,6 @@ public interface NewsMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "coverImageUrl", ignore = true)
     void updateEntityFromDTO(NewsRequestDTO dto, @MappingTarget News news);
 }

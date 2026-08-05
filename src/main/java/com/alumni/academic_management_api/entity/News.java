@@ -57,6 +57,10 @@ public class News {
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
+    @Builder.Default
+    @Column(name = "draft", nullable = false)
+    private boolean draft = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

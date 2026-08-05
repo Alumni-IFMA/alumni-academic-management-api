@@ -26,7 +26,7 @@ public class EmailService {
             JavaMailSender mailSender,
             TemplateEngine templateEngine,
             @Value("${mail.from}") String from,
-            @Value("${app.frontend-url}") String frontendUrl
+            @Value("${app.frontend-prod-url}") String frontendUrl
     ) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;

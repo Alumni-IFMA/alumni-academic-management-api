@@ -1,7 +1,6 @@
 package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
-import com.alumni.academic_management_api.dto.news.NewsRequestDTO;
 import com.alumni.academic_management_api.entity.News;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
@@ -19,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,33 +101,35 @@ class NewsControllerIT {
                 .build());
     }
 
+    private News saveDraftNews(String title) {
+        return newsRepository.save(News.builder()
+                .title(title)
+                .summary("Um resumo de teste")
+                .content("Conteúdo completo da notícia de teste.")
+                .publishedAt(PUBLISHED_AT)
+                .active(true)
+                .draft(true)
+                .build());
+    }
+
     @Nested
     class Create {
 
         @Test
         void givenNoToken_whenCreate_thenReturn401() throws Exception {
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Nova Notícia")
-                    .content("Conteúdo da notícia.")
-                    .build();
-
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+            mockMvc.perform(multipart(BASE_URL)
+                            .param("title", "Nova Notícia")
+                            .param("content", "Conteúdo da notícia."))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
         void givenAlumniToken_whenCreate_thenReturn403() throws Exception {
             String token = loginAndGetToken("alumni@test.com", Role.ALUMNI, "11111111111");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Nova Notícia")
-                    .content("Conteúdo da notícia.")
-                    .build();
 
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(BASE_URL)
+                            .param("title", "Nova Notícia")
+                            .param("content", "Conteúdo da notícia.")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isForbidden());
         }
@@ -136,37 +137,60 @@ class NewsControllerIT {
         @Test
         void givenAdminToken_whenCreateWithValidBody_thenReturn201() throws Exception {
             String token = loginAndGetToken("admin@test.com", Role.ADMIN, "22222222222");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("IFMA abre inscrições para Semana de TI")
-                    .summary("Evento reúne egressos e alunos ativos")
-                    .content("O IFMA abre inscrições para a Semana de TI 2026.")
-                    .coverImageUrl("https://ifma.edu.br/semana-ti.jpg")
-                    .publishedAt(PUBLISHED_AT)
-                    .build();
 
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(BASE_URL)
+                            .param("title", "IFMA abre inscrições para Semana de TI")
+                            .param("summary", "Evento reúne egressos e alunos ativos")
+                            .param("content", "O IFMA abre inscrições para a Semana de TI 2026.")
+                            .param("publishedAt", PUBLISHED_AT.toString())
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.title").value("IFMA abre inscrições para Semana de TI"))
-                    .andExpect(jsonPath("$.active").value(true));
+                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.draft").value(false));
         }
 
         @Test
         void givenAdminToken_whenCreateWithBlankTitle_thenReturn400() throws Exception {
             String token = loginAndGetToken("admin@test.com", Role.ADMIN, "33333333333");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("")
-                    .content("Conteúdo da notícia.")
-                    .build();
 
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(BASE_URL)
+                            .param("title", "")
+                            .param("content", "Conteúdo da notícia.")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void givenAdminTokenWithCoverImage_whenCreate_thenReturn201WithCoverImageUrl() throws Exception {
+            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "10101010101");
+            String expectedUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
+            when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            MockMultipartFile file = new MockMultipartFile(
+                    "coverImage", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+            );
+
+            mockMvc.perform(multipart(BASE_URL)
+                            .file(file)
+                            .param("title", "Notícia com Capa")
+                            .param("content", "Conteúdo")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.coverImageUrl").value(expectedUrl));
+        }
+
+        @Test
+        void givenAdminTokenWithDraftTrue_whenCreate_thenReturnDraftTrue() throws Exception {
+            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "12121212121");
+
+            mockMvc.perform(multipart(BASE_URL)
+                            .param("title", "Rascunho")
+                            .param("content", "Conteúdo em rascunho")
+                            .param("draft", "true")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.draft").value(true));
         }
     }
 
@@ -203,6 +227,36 @@ class NewsControllerIT {
                     .andExpect(jsonPath("$.content").isArray())
                     .andExpect(jsonPath("$.totalElements").value(0));
         }
+
+        @Test
+        void givenDraftNews_whenFindAllAsAnonymous_thenExcludedFromContent() throws Exception {
+            saveDraftNews("Rascunho");
+
+            mockMvc.perform(get(BASE_URL))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements").value(0));
+        }
+
+        @Test
+        void givenDraftNews_whenFindAllAsAlumni_thenExcludedFromContent() throws Exception {
+            String token = loginAndGetToken("alumni2@test.com", Role.ALUMNI, "13131313131");
+            saveDraftNews("Rascunho");
+
+            mockMvc.perform(get(BASE_URL).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements").value(0));
+        }
+
+        @Test
+        void givenDraftNews_whenFindAllAsAdmin_thenIncludedInContent() throws Exception {
+            String token = loginAndGetToken("admin4@test.com", Role.ADMIN, "14141414141");
+            saveDraftNews("Rascunho");
+
+            mockMvc.perform(get(BASE_URL).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.content[0].draft").value(true));
+        }
     }
 
     @Nested
@@ -235,6 +289,25 @@ class NewsControllerIT {
             mockMvc.perform(get(BASE_URL + "/{id}", inactiveNews.getId()))
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        void givenDraftNews_whenFindByIdAsAnonymous_thenReturn404() throws Exception {
+            News draft = saveDraftNews("Rascunho");
+
+            mockMvc.perform(get(BASE_URL + "/{id}", draft.getId()))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void givenDraftNews_whenFindByIdAsAdmin_thenReturn200() throws Exception {
+            String token = loginAndGetToken("admin5@test.com", Role.ADMIN, "15151515151");
+            News draft = saveDraftNews("Rascunho");
+
+            mockMvc.perform(get(BASE_URL + "/{id}", draft.getId())
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.draft").value(true));
+        }
     }
 
     @Nested
@@ -243,14 +316,10 @@ class NewsControllerIT {
         @Test
         void givenNoToken_whenUpdate_thenReturn401() throws Exception {
             News news = saveActiveNews("Notícia Original");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Título Atualizado")
-                    .content("Conteúdo atualizado.")
-                    .build();
 
-            mockMvc.perform(put(BASE_URL + "/{id}", news.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
+                            .param("title", "Título Atualizado")
+                            .param("content", "Conteúdo atualizado."))
                     .andExpect(status().isUnauthorized());
         }
 
@@ -258,14 +327,10 @@ class NewsControllerIT {
         void givenAlumniToken_whenUpdate_thenReturn403() throws Exception {
             String token = loginAndGetToken("alumni@test.com", Role.ALUMNI, "44444444444");
             News news = saveActiveNews("Notícia Original");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Título Atualizado")
-                    .content("Conteúdo atualizado.")
-                    .build();
 
-            mockMvc.perform(put(BASE_URL + "/{id}", news.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
+                            .param("title", "Título Atualizado")
+                            .param("content", "Conteúdo atualizado.")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isForbidden());
         }
@@ -274,14 +339,10 @@ class NewsControllerIT {
         void givenAdminToken_whenUpdateExistingNews_thenReturn200() throws Exception {
             String token = loginAndGetToken("admin@test.com", Role.ADMIN, "55555555555");
             News news = saveActiveNews("Notícia Original");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Título Atualizado")
-                    .content("Conteúdo atualizado.")
-                    .build();
 
-            mockMvc.perform(put(BASE_URL + "/{id}", news.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
+                            .param("title", "Título Atualizado")
+                            .param("content", "Conteúdo atualizado.")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.title").value("Título Atualizado"));
@@ -290,77 +351,44 @@ class NewsControllerIT {
         @Test
         void givenAdminToken_whenUpdateNonExistingNews_thenReturn404() throws Exception {
             String token = loginAndGetToken("admin@test.com", Role.ADMIN, "66666666666");
-            NewsRequestDTO request = NewsRequestDTO.builder()
-                    .title("Título Atualizado")
-                    .content("Conteúdo atualizado.")
-                    .build();
 
-            mockMvc.perform(put(BASE_URL + "/{id}", 999999L)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request))
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", 999999L)
+                            .param("title", "Título Atualizado")
+                            .param("content", "Conteúdo atualizado.")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isNotFound());
         }
-    }
-
-    @Nested
-    class UploadCoverImage {
-
-        private static final String COVER_IMAGE_URL = BASE_URL + "/{id}/cover-image";
 
         @Test
-        void givenNoToken_whenUploadCoverImage_thenReturn401() throws Exception {
-            News news = saveActiveNews("Notícia de Capa");
-            MockMultipartFile file = new MockMultipartFile(
-                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
-            );
-
-            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId()).file(file))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        void givenAlumniToken_whenUploadCoverImage_thenReturn403() throws Exception {
-            String token = loginAndGetToken("alumni@test.com", Role.ALUMNI, "77777777777");
-            News news = saveActiveNews("Notícia de Capa");
-            MockMultipartFile file = new MockMultipartFile(
-                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
-            );
-
-            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId())
-                            .file(file)
-                            .header("Authorization", "Bearer " + token))
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        void givenAdminToken_whenUploadCoverImage_thenReturn200WithUrl() throws Exception {
-            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "88888888888");
+        void givenAdminTokenWithNewCoverImage_whenUpdate_thenReplacesCoverImageUrl() throws Exception {
+            String token = loginAndGetToken("admin6@test.com", Role.ADMIN, "16161616161");
             News news = saveActiveNews("Notícia com Capa");
-            String expectedUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
-            when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            String newUrl = "http://localhost:9000/alumni-files/news-images/new-uuid.jpg";
+            when(fileStorageService.uploadFile(any(), any())).thenReturn(newUrl);
             MockMultipartFile file = new MockMultipartFile(
-                    "file", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
+                    "coverImage", "new.jpg", "image/jpeg", new byte[]{1, 2, 3}
             );
 
-            mockMvc.perform(multipart(COVER_IMAGE_URL, news.getId())
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
                             .file(file)
+                            .param("title", news.getTitle())
+                            .param("content", news.getContent())
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.coverImageUrl").value(expectedUrl));
+                    .andExpect(jsonPath("$.coverImageUrl").value(newUrl));
         }
 
         @Test
-        void givenAdminToken_whenUploadCoverImageForNonExistentNews_thenReturn404() throws Exception {
-            String token = loginAndGetToken("admin@test.com", Role.ADMIN, "99999999999");
-            MockMultipartFile file = new MockMultipartFile(
-                    "file", "cover.jpg", "image/jpeg", new byte[]{1}
-            );
+        void givenAdminTokenWithoutCoverImage_whenUpdate_thenKeepsExistingCoverImageUrl() throws Exception {
+            String token = loginAndGetToken("admin7@test.com", Role.ADMIN, "17171717171");
+            News news = saveActiveNews("Notícia com Capa");
 
-            mockMvc.perform(multipart(COVER_IMAGE_URL, 999999L)
-                            .file(file)
+            mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
+                            .param("title", "Título Atualizado")
+                            .param("content", news.getContent())
                             .header("Authorization", "Bearer " + token))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.coverImageUrl").value(news.getCoverImageUrl()));
         }
     }
 }

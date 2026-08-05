@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface NewsRepository extends JpaRepository<News, Long> {
 
     Page<News> findAllByActiveTrueOrderByPublishedAtDesc(Pageable pageable);
+
+    Page<News> findAllByActiveTrueAndDraftFalseOrderByPublishedAtDesc(Pageable pageable);
 }

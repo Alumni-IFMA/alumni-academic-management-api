@@ -4,10 +4,12 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.SetBucketPolicyArgs;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@Slf4j
 @Configuration
 public class MinioConfig {
 
@@ -44,10 +46,15 @@ public class MinioConfig {
         if (!exists) {
             client.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
         }
-        client.setBucketPolicy(SetBucketPolicyArgs.builder()
-                .bucket(bucketName)
-                .config(buildPublicReadPolicy())
-                .build());
+        try {
+            client.setBucketPolicy(SetBucketPolicyArgs.builder()
+                    .bucket(bucketName)
+                    .config(buildPublicReadPolicy())
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to apply bucket policy for '{}' (provider may not support PutBucketPolicy): {}",
+                    bucketName, e.getMessage());
+        }
     }
 
     private String buildPublicReadPolicy() {

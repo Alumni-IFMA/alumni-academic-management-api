@@ -27,6 +27,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -163,10 +165,12 @@ class NewsControllerIT {
         }
 
         @Test
-        void givenAdminTokenWithCoverImage_whenCreate_thenReturn201WithCoverImageUrl() throws Exception {
+        void givenAdminTokenWithCoverImage_whenCreate_thenReturn201WithPresignedCoverImageUrl() throws Exception {
             String token = loginAndGetToken("admin@test.com", Role.ADMIN, "10101010101");
-            String expectedUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
-            when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            String rawUrl = "http://localhost:9000/alumni-files/news-images/uuid.jpg";
+            String presignedUrl = rawUrl + "?X-Amz-Signature=test";
+            when(fileStorageService.uploadFile(any(), any())).thenReturn(rawUrl);
+            when(fileStorageService.generatePresignedUrl(eq(rawUrl), anyInt())).thenReturn(presignedUrl);
             MockMultipartFile file = new MockMultipartFile(
                     "coverImage", "cover.jpg", "image/jpeg", new byte[]{1, 2, 3}
             );
@@ -177,7 +181,7 @@ class NewsControllerIT {
                             .param("content", "Conteúdo")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.coverImageUrl").value(expectedUrl));
+                    .andExpect(jsonPath("$.coverImageUrl").value(presignedUrl));
         }
 
         @Test
@@ -257,6 +261,18 @@ class NewsControllerIT {
                     .andExpect(jsonPath("$.totalElements").value(1))
                     .andExpect(jsonPath("$.content[0].draft").value(true));
         }
+
+        @Test
+        void givenNewsWithCoverImage_whenFindAll_thenReturnsPresignedCoverImageUrl() throws Exception {
+            News news = saveActiveNews("Notícia com Capa");
+            String presignedUrl = news.getCoverImageUrl() + "?X-Amz-Signature=test";
+            when(fileStorageService.generatePresignedUrl(eq(news.getCoverImageUrl()), anyInt()))
+                    .thenReturn(presignedUrl);
+
+            mockMvc.perform(get(BASE_URL))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].coverImageUrl").value(presignedUrl));
+        }
     }
 
     @Nested
@@ -307,6 +323,18 @@ class NewsControllerIT {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.draft").value(true));
+        }
+
+        @Test
+        void givenNewsWithCoverImage_whenFindById_thenReturnsPresignedCoverImageUrl() throws Exception {
+            News news = saveActiveNews("Notícia com Capa");
+            String presignedUrl = news.getCoverImageUrl() + "?X-Amz-Signature=test";
+            when(fileStorageService.generatePresignedUrl(eq(news.getCoverImageUrl()), anyInt()))
+                    .thenReturn(presignedUrl);
+
+            mockMvc.perform(get(BASE_URL + "/{id}", news.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.coverImageUrl").value(presignedUrl));
         }
     }
 
@@ -360,11 +388,13 @@ class NewsControllerIT {
         }
 
         @Test
-        void givenAdminTokenWithNewCoverImage_whenUpdate_thenReplacesCoverImageUrl() throws Exception {
+        void givenAdminTokenWithNewCoverImage_whenUpdate_thenReplacesCoverImageUrlWithPresignedOne() throws Exception {
             String token = loginAndGetToken("admin6@test.com", Role.ADMIN, "16161616161");
             News news = saveActiveNews("Notícia com Capa");
             String newUrl = "http://localhost:9000/alumni-files/news-images/new-uuid.jpg";
+            String presignedUrl = newUrl + "?X-Amz-Signature=test";
             when(fileStorageService.uploadFile(any(), any())).thenReturn(newUrl);
+            when(fileStorageService.generatePresignedUrl(eq(newUrl), anyInt())).thenReturn(presignedUrl);
             MockMultipartFile file = new MockMultipartFile(
                     "coverImage", "new.jpg", "image/jpeg", new byte[]{1, 2, 3}
             );
@@ -375,20 +405,23 @@ class NewsControllerIT {
                             .param("content", news.getContent())
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.coverImageUrl").value(newUrl));
+                    .andExpect(jsonPath("$.coverImageUrl").value(presignedUrl));
         }
 
         @Test
-        void givenAdminTokenWithoutCoverImage_whenUpdate_thenKeepsExistingCoverImageUrl() throws Exception {
+        void givenAdminTokenWithoutCoverImage_whenUpdate_thenKeepsPresignedExistingCoverImageUrl() throws Exception {
             String token = loginAndGetToken("admin7@test.com", Role.ADMIN, "17171717171");
             News news = saveActiveNews("Notícia com Capa");
+            String presignedUrl = news.getCoverImageUrl() + "?X-Amz-Signature=test";
+            when(fileStorageService.generatePresignedUrl(eq(news.getCoverImageUrl()), anyInt()))
+                    .thenReturn(presignedUrl);
 
             mockMvc.perform(multipart(HttpMethod.PUT, BASE_URL + "/{id}", news.getId())
                             .param("title", "Título Atualizado")
                             .param("content", news.getContent())
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.coverImageUrl").value(news.getCoverImageUrl()));
+                    .andExpect(jsonPath("$.coverImageUrl").value(presignedUrl));
         }
     }
 }

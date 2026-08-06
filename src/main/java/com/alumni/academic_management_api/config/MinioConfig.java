@@ -43,11 +43,11 @@ public class MinioConfig {
         );
         if (!exists) {
             client.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            client.setBucketPolicy(SetBucketPolicyArgs.builder()
-                    .bucket(bucketName)
-                    .config(buildPublicReadPolicy())
-                    .build());
         }
+        client.setBucketPolicy(SetBucketPolicyArgs.builder()
+                .bucket(bucketName)
+                .config(buildPublicReadPolicy())
+                .build());
     }
 
     private String buildPublicReadPolicy() {

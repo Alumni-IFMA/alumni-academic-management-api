@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class NewsService {
 
+    private static final int COVER_IMAGE_URL_EXPIRY_MINUTES = 1440;
+
     private final NewsRepository newsRepository;
     private final NewsMapper newsMapper;
     private final FileStorageService fileStorageService;
@@ -31,7 +33,7 @@ public class NewsService {
         News news = newsMapper.toEntity(dto);
         news.setActive(true);
         applyCoverImage(dto, news);
-        return newsMapper.toResponseDTO(newsRepository.save(news));
+        return buildResponse(newsRepository.save(news));
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +41,7 @@ public class NewsService {
         Page<News> page = isAdmin
                 ? newsRepository.findAllByActiveTrueOrderByPublishedAtDesc(pageable)
                 : newsRepository.findAllByActiveTrueAndDraftFalseOrderByPublishedAtDesc(pageable);
-        return page.map(newsMapper::toResponseDTO);
+        return page.map(this::buildResponse);
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +50,7 @@ public class NewsService {
                 .filter(News::isActive)
                 .filter(n -> isAdmin || !n.isDraft())
                 .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
-        return newsMapper.toResponseDTO(news);
+        return buildResponse(news);
     }
 
     public NewsResponseDTO update(Long id, NewsRequestDTO dto) {
@@ -57,7 +59,7 @@ public class NewsService {
                 .orElseThrow(() -> new ResourceNotFoundException("News not found with id: " + id));
         newsMapper.updateEntityFromDTO(dto, news);
         applyCoverImage(dto, news);
-        return newsMapper.toResponseDTO(newsRepository.save(news));
+        return buildResponse(newsRepository.save(news));
     }
 
     public void delete(Long id) {
@@ -77,5 +79,14 @@ public class NewsService {
         }
         String url = fileStorageService.uploadFile(dto.getCoverImage(), FileStorageService.FOLDER_NEWS_IMAGES);
         news.setCoverImageUrl(url);
+    }
+
+    private NewsResponseDTO buildResponse(News news) {
+        NewsResponseDTO dto = newsMapper.toResponseDTO(news);
+        if (dto.getCoverImageUrl() != null) {
+            dto.setCoverImageUrl(
+                    fileStorageService.generatePresignedUrl(dto.getCoverImageUrl(), COVER_IMAGE_URL_EXPIRY_MINUTES));
+        }
+        return dto;
     }
 }

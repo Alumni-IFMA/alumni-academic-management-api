@@ -99,6 +99,11 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<AcademicProfile> academicProfiles = new ArrayList<>();
 
+    @Builder.Default
+    @Column(name = "has_seen_tutorial", nullable = false)
+    @ToString.Include
+    private Boolean hasSeenTutorial = false;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

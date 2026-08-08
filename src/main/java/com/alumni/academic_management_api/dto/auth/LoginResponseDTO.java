@@ -18,4 +18,7 @@ public class LoginResponseDTO implements Serializable {
 
     @Schema(description = "Identificador do usuário autenticado", example = "42")
     private Long id;
+
+    @Schema(description = "Indica se o usuário já concluiu o tutorial de primeiro acesso", example = "true")
+    private Boolean hasSeenTutorial;
 }

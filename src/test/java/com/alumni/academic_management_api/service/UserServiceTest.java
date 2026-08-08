@@ -487,4 +487,61 @@ class UserServiceTest {
                     .hasMessageContaining("999");
         }
     }
+
+    @Nested
+    class CompleteOnboarding {
+
+        @Test
+        void givenValidUserAndEmail_whenCompleteOnboarding_thenSetsHasSeenTutorialToTrue() {
+            Long userId = 1L;
+            String email = "joao@email.com";
+            User user = User.builder()
+                    .id(userId)
+                    .email(email)
+                    .hasSeenTutorial(false)
+                    .build();
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            userService.completeOnboarding(userId, email);
+
+            assertThat(user.getHasSeenTutorial()).isTrue();
+            Mockito.verify(userRepository).save(user);
+        }
+
+        @Test
+        void givenNonExistingUser_whenCompleteOnboarding_thenThrowResourceNotFoundException() {
+            Long userId = 99L;
+            String email = "joao@email.com";
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> userService.completeOnboarding(userId, email))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("99");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+
+        @Test
+        void givenDifferentEmail_whenCompleteOnboarding_thenThrowBusinessException() {
+            Long userId = 1L;
+            String ownerEmail = "joao@email.com";
+            String differentEmail = "outro.usuario@email.com";
+
+            User user = User.builder()
+                    .id(userId)
+                    .email(ownerEmail)
+                    .hasSeenTutorial(false)
+                    .build();
+
+            Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.completeOnboarding(userId, differentEmail))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("You do not have permission to update the onboarding status of another user");
+
+            Mockito.verify(userRepository, Mockito.never()).save(Mockito.any());
+        }
+    }
 }

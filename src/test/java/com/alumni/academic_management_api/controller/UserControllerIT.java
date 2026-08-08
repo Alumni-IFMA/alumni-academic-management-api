@@ -28,10 +28,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -271,6 +273,64 @@ class UserControllerIT {
 
             mockMvc.perform(multipart(URL, 999999L).file(file))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    class CompleteOnboarding {
+
+        private static final String URL = "/auth/users/{id}/onboarding";
+
+        @Test
+        @WithMockUser(username = "joao@gmail.com")
+        void givenValidUserAndCorrectEmail_whenCompleteOnboarding_thenReturn204AndSaveInDb() throws Exception {
+            User user = User.builder()
+                    .name("João Silva")
+                    .cpf("98765432100")
+                    .email("joao@gmail.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .hasSeenTutorial(false)
+                    .build();
+            User savedUser = userRepository.save(user);
+
+            mockMvc.perform(patch(URL, savedUser.getId()))
+                    .andExpect(status().isNoContent());
+
+            User updatedUser = userRepository.findById(savedUser.getId()).orElseThrow();
+            assertThat(updatedUser.getHasSeenTutorial()).isTrue();
+        }
+
+        @Test
+        @WithMockUser(username = "ricardo@gmail.com")
+        void givenDifferentUserEmail_whenCompleteOnboarding_thenReturn400() throws Exception {
+            User user = User.builder()
+                    .name("Maria Silva")
+                    .cpf("98765432101")
+                    .email("maria@gmail.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .hasSeenTutorial(false)
+                    .build();
+            User savedUser = userRepository.save(user);
+
+            mockMvc.perform(patch(URL, savedUser.getId()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string(containsString("You do not have permission")));
+        }
+
+        @Test
+        @WithMockUser(username = "joao@gmail.com")
+        void givenNonExistingUser_whenCompleteOnboarding_thenReturn404() throws Exception {
+            mockMvc.perform(patch(URL, 999999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string(containsString("User not found")));
+        }
+
+        @Test
+        void givenNoToken_whenCompleteOnboarding_thenReturn401() throws Exception {
+            mockMvc.perform(patch(URL, 1L))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

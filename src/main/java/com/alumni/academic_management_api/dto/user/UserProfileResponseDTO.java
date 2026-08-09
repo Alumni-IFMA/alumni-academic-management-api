@@ -50,4 +50,7 @@ public class UserProfileResponseDTO implements Serializable {
 
     @Schema(description = "Lista de perfis acadêmicos")
     List<AcademicProfileResponseDTO> academicProfiles;
+
+    @Schema(description = "Indica se o usuário já concluiu o tutorial de primeiro acesso", example = "true")
+    private Boolean hasSeenTutorial;
 }

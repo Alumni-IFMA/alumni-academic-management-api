@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/auth/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/auth/users/*/role").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/auth/users/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/auth/users/*/onboarding").authenticated()
                         .requestMatchers(HttpMethod.GET, "/auth/users/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/users/*/profile-picture").authenticated()
                         .requestMatchers(HttpMethod.GET, "/auth/users/**", "/campus-courses").permitAll()

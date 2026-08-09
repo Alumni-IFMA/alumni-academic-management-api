@@ -166,4 +166,23 @@ public class UserController {
         UserSimpleDTO response = userService.approveUser(id);
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/users/{id}/onboarding")
+    @Operation(summary = "Concluir onboarding", description = "Atualiza a flag has_seen_tutorial para true.")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Tutorial marcado como visto com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Sem permissão para alterar o status", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
+    })
+    public ResponseEntity<Void> completeOnboarding(
+            @Parameter(description = "ID do usuário") @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.debug("REST request to complete onboarding for user: {}", id);
+        userService.completeOnboarding(id, userDetails.getUsername());
+
+        return ResponseEntity.noContent().build();
+    }
 }

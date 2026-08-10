@@ -145,4 +145,16 @@ public class UserService {
 
         return userMapper.toSimpleDTO(savedUser);
     }
+
+    public void completeOnboarding(Long id, String authenticatedEmail) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        if (!user.getEmail().equals(authenticatedEmail)) {
+            throw new BusinessException("You do not have permission to update the onboarding status of another user");
+        }
+
+        user.setHasSeenTutorial(true);
+        userRepository.save(user);
+    }
 }

@@ -42,6 +42,8 @@ class NewsServiceTest {
     private NewsService newsService;
 
     private static final LocalDateTime PUBLISHED_AT = LocalDateTime.of(2026, 5, 16, 10, 0);
+    private static final String PRESIGNED_COVER_IMAGE_URL =
+            "https://ifma.edu.br/semana-ti.jpg?X-Amz-Signature=test";
 
     private static News buildActiveNews() {
         return News.builder()
@@ -89,6 +91,8 @@ class NewsServiceTest {
             Mockito.when(newsMapper.toEntity(request)).thenReturn(news);
             Mockito.when(newsRepository.save(news)).thenReturn(news);
             Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+            Mockito.when(fileStorageService.generatePresignedUrl(response.getCoverImageUrl(), 1440))
+                    .thenReturn(PRESIGNED_COVER_IMAGE_URL);
 
             NewsResponseDTO result = newsService.create(request);
 
@@ -96,6 +100,7 @@ class NewsServiceTest {
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getTitle()).isEqualTo("IFMA abre inscrições para Semana de TI");
             assertThat(result.isActive()).isTrue();
+            assertThat(result.getCoverImageUrl()).isEqualTo(PRESIGNED_COVER_IMAGE_URL);
 
             Mockito.verify(newsMapper).toEntity(request);
             Mockito.verify(newsRepository).save(news);
@@ -153,10 +158,13 @@ class NewsServiceTest {
             Mockito.when(newsRepository.findAllByActiveTrueOrderByPublishedAtDesc(pageable))
                     .thenReturn(newsPage);
             Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+            Mockito.when(fileStorageService.generatePresignedUrl(response.getCoverImageUrl(), 1440))
+                    .thenReturn(PRESIGNED_COVER_IMAGE_URL);
 
             Page<NewsResponseDTO> result = newsService.findAll(pageable, true);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0).getCoverImageUrl()).isEqualTo(PRESIGNED_COVER_IMAGE_URL);
             Mockito.verify(newsRepository).findAllByActiveTrueOrderByPublishedAtDesc(pageable);
             Mockito.verify(newsRepository, Mockito.never())
                     .findAllByActiveTrueAndDraftFalseOrderByPublishedAtDesc(Mockito.any());
@@ -172,10 +180,13 @@ class NewsServiceTest {
             Mockito.when(newsRepository.findAllByActiveTrueAndDraftFalseOrderByPublishedAtDesc(pageable))
                     .thenReturn(newsPage);
             Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+            Mockito.when(fileStorageService.generatePresignedUrl(response.getCoverImageUrl(), 1440))
+                    .thenReturn(PRESIGNED_COVER_IMAGE_URL);
 
             Page<NewsResponseDTO> result = newsService.findAll(pageable, false);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0).getCoverImageUrl()).isEqualTo(PRESIGNED_COVER_IMAGE_URL);
             Mockito.verify(newsRepository).findAllByActiveTrueAndDraftFalseOrderByPublishedAtDesc(pageable);
             Mockito.verify(newsRepository, Mockito.never())
                     .findAllByActiveTrueOrderByPublishedAtDesc(Mockito.any());
@@ -206,11 +217,14 @@ class NewsServiceTest {
 
             Mockito.when(newsRepository.findById(1L)).thenReturn(Optional.of(news));
             Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+            Mockito.when(fileStorageService.generatePresignedUrl(response.getCoverImageUrl(), 1440))
+                    .thenReturn(PRESIGNED_COVER_IMAGE_URL);
 
             NewsResponseDTO result = newsService.findById(1L, false);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getCoverImageUrl()).isEqualTo(PRESIGNED_COVER_IMAGE_URL);
 
             Mockito.verify(newsRepository).findById(1L);
             Mockito.verify(newsMapper).toResponseDTO(news);
@@ -261,6 +275,8 @@ class NewsServiceTest {
             NewsResponseDTO result = newsService.findById(2L, true);
 
             assertThat(result.isDraft()).isTrue();
+            assertThat(result.getCoverImageUrl()).isNull();
+            Mockito.verify(fileStorageService, Mockito.never()).generatePresignedUrl(Mockito.any(), Mockito.anyInt());
         }
 
         @Test
@@ -295,11 +311,14 @@ class NewsServiceTest {
             Mockito.doNothing().when(newsMapper).updateEntityFromDTO(request, news);
             Mockito.when(newsRepository.save(news)).thenReturn(news);
             Mockito.when(newsMapper.toResponseDTO(news)).thenReturn(response);
+            Mockito.when(fileStorageService.generatePresignedUrl(response.getCoverImageUrl(), 1440))
+                    .thenReturn(PRESIGNED_COVER_IMAGE_URL);
 
             NewsResponseDTO result = newsService.update(1L, request);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getCoverImageUrl()).isEqualTo(PRESIGNED_COVER_IMAGE_URL);
 
             Mockito.verify(newsMapper).updateEntityFromDTO(request, news);
             Mockito.verify(newsRepository).save(news);

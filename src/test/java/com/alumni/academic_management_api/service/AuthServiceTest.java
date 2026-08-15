@@ -3,11 +3,16 @@ package com.alumni.academic_management_api.service;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
 import com.alumni.academic_management_api.entity.PasswordResetToken;
+import com.alumni.academic_management_api.entity.PasswordSetupToken;
 import com.alumni.academic_management_api.entity.User;
+import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
 import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.exception.InvalidTokenException;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
+import com.alumni.academic_management_api.exception.TokenGoneException;
 import com.alumni.academic_management_api.repository.PasswordResetTokenRepository;
+import com.alumni.academic_management_api.repository.PasswordSetupTokenRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,6 +47,9 @@ class AuthServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private PasswordSetupTokenRepository passwordSetupTokenRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -193,6 +201,116 @@ class AuthServiceTest {
                     .hasMessageContaining("Token is expired");
 
             Mockito.verify(passwordResetTokenRepository).delete(passwordResetToken);
+            Mockito.verify(userRepository, Mockito.never()).save(any());
+        }
+    }
+
+    @Nested
+    class SetPassword {
+
+        private static final String RAW_TOKEN = "raw-setup-token";
+
+        @Test
+        void shouldSetPasswordSuccessfully() {
+            User user = User.builder().id(7L).email("user@email.com").accountStatus(AccountStatus.ACTIVE).build();
+            PasswordSetupToken setupToken = PasswordSetupToken.builder()
+                    .token(PasswordSetupTokenService.hash(RAW_TOKEN))
+                    .user(user)
+                    .expiresAt(LocalDateTime.now().plusHours(1))
+                    .build();
+
+            Mockito.when(passwordSetupTokenRepository.findByToken(PasswordSetupTokenService.hash(RAW_TOKEN)))
+                    .thenReturn(Optional.of(setupToken));
+            Mockito.when(passwordEncoder.encode("Password1")).thenReturn("encoded-password");
+
+            authService.setPassword(RAW_TOKEN, "Password1", "Password1");
+
+            assertThat(user.getPassword()).isEqualTo("encoded-password");
+            assertThat(setupToken.getUsedAt()).isNotNull();
+            Mockito.verify(userRepository).save(user);
+            Mockito.verify(passwordSetupTokenRepository).save(setupToken);
+        }
+
+        @Test
+        void shouldThrow_whenPasswordsDontMatch() {
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "Password1", "Password2"))
+                    .isInstanceOf(BusinessException.class);
+
+            Mockito.verify(passwordSetupTokenRepository, Mockito.never()).findByToken(any());
+        }
+
+        @Test
+        void shouldThrow_whenPasswordTooWeak() {
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "weak", "weak"))
+                    .isInstanceOf(BusinessException.class);
+
+            Mockito.verify(passwordSetupTokenRepository, Mockito.never()).findByToken(any());
+        }
+
+        @Test
+        void shouldThrow_whenTokenNotFound() {
+            Mockito.when(passwordSetupTokenRepository.findByToken(PasswordSetupTokenService.hash(RAW_TOKEN)))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "Password1", "Password1"))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(userRepository, Mockito.never()).save(any());
+        }
+
+        @Test
+        void shouldThrow_whenTokenAlreadyUsed() {
+            User user = User.builder().id(7L).email("user@email.com").accountStatus(AccountStatus.ACTIVE).build();
+            PasswordSetupToken setupToken = PasswordSetupToken.builder()
+                    .token(PasswordSetupTokenService.hash(RAW_TOKEN))
+                    .user(user)
+                    .expiresAt(LocalDateTime.now().plusHours(1))
+                    .usedAt(LocalDateTime.now().minusMinutes(5))
+                    .build();
+
+            Mockito.when(passwordSetupTokenRepository.findByToken(PasswordSetupTokenService.hash(RAW_TOKEN)))
+                    .thenReturn(Optional.of(setupToken));
+
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "Password1", "Password1"))
+                    .isInstanceOf(TokenGoneException.class);
+
+            Mockito.verify(userRepository, Mockito.never()).save(any());
+        }
+
+        @Test
+        void shouldThrow_whenTokenExpired() {
+            User user = User.builder().id(7L).email("user@email.com").accountStatus(AccountStatus.ACTIVE).build();
+            PasswordSetupToken setupToken = PasswordSetupToken.builder()
+                    .token(PasswordSetupTokenService.hash(RAW_TOKEN))
+                    .user(user)
+                    .expiresAt(LocalDateTime.now().minusMinutes(5))
+                    .build();
+
+            Mockito.when(passwordSetupTokenRepository.findByToken(PasswordSetupTokenService.hash(RAW_TOKEN)))
+                    .thenReturn(Optional.of(setupToken));
+
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "Password1", "Password1"))
+                    .isInstanceOf(TokenGoneException.class);
+
+            Mockito.verify(userRepository, Mockito.never()).save(any());
+        }
+
+        @Test
+        void shouldThrow_whenUserNotActive() {
+            User user = User.builder().id(7L).email("user@email.com")
+                    .accountStatus(AccountStatus.PENDING_VERIFICATION).build();
+            PasswordSetupToken setupToken = PasswordSetupToken.builder()
+                    .token(PasswordSetupTokenService.hash(RAW_TOKEN))
+                    .user(user)
+                    .expiresAt(LocalDateTime.now().plusHours(1))
+                    .build();
+
+            Mockito.when(passwordSetupTokenRepository.findByToken(PasswordSetupTokenService.hash(RAW_TOKEN)))
+                    .thenReturn(Optional.of(setupToken));
+
+            assertThatThrownBy(() -> authService.setPassword(RAW_TOKEN, "Password1", "Password1"))
+                    .isInstanceOf(BusinessException.class);
+
             Mockito.verify(userRepository, Mockito.never()).save(any());
         }
     }

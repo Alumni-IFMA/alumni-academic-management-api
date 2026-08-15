@@ -35,6 +35,14 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(TokenGoneException.class)
+    public ResponseEntity<String> handleTokenGoneException(TokenGoneException ex) {
+        return ResponseEntity
+                .status(HttpStatus.GONE)
+                .body(ex.getMessage());
+    }
+
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<String> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         if (ex.getCause() instanceof InvalidFormatException ife && ife.getTargetType().isEnum()) {

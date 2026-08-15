@@ -38,7 +38,7 @@ public class PasswordSetupTokenService {
         return rawToken;
     }
 
-    private String hash(String rawToken) {
+    public static String hash(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));

@@ -2,6 +2,7 @@ package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.config.OpenApiConfig;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.AlumniSearchResponseDTO;
 import com.alumni.academic_management_api.dto.user.UpdateRoleRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
@@ -74,6 +75,26 @@ public class UserController {
     public ResponseEntity<List<UserSimpleDTO>> findAll() {
         log.debug("REST request to get all users");
         List<UserSimpleDTO> response = userService.findAll();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/users/search")
+    @Operation(summary = "Buscar usuários",
+        description = "Filtra usuários por campus, curso e/ou nome. Os filtros informados são combinados.")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso",
+            content = @Content(array = @ArraySchema(
+                    schema = @Schema(implementation = AlumniSearchResponseDTO.class)))),
+        @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content)
+    })
+    public ResponseEntity<List<AlumniSearchResponseDTO>> searchUsers(
+            @Parameter(description = "ID do campus") @RequestParam(required = false) Long campusId,
+            @Parameter(description = "ID do curso") @RequestParam(required = false) Long courseId,
+            @Parameter(description = "Nome ou parte do nome do usuário", example = "joão")
+            @RequestParam(required = false) String name) {
+        log.debug("REST request to search users: campusId={}, courseId={}, name={}", campusId, courseId, name);
+        List<AlumniSearchResponseDTO> response = userService.searchUsers(campusId, courseId, name);
         return ResponseEntity.ok(response);
     }
 

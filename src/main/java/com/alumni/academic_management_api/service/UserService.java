@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.AlumniSearchResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.AcademicProfile;
@@ -87,6 +88,12 @@ public class UserService {
         List<User> userList = userRepository.findAll();
 
         return userMapper.toSimpleDTOList(userList);
+    }
+
+    public List<AlumniSearchResponseDTO> searchUsers(Long campusId, Long courseId, String name) {
+        return userRepository.searchUsers(campusId, courseId, name).stream()
+                .map(userMapper::toAlumniSearchResponseDTO)
+                .toList();
     }
 
     public UserProfileResponseDTO getUserProfile(Long id) {

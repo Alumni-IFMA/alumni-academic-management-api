@@ -5,6 +5,7 @@ import com.alumni.academic_management_api.dto.support.SupportMessageResponseDTO;
 import com.alumni.academic_management_api.entity.SupportMessage;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.exception.BusinessException;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.SupportMessageMapper;
 import com.alumni.academic_management_api.repository.SupportMessageRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -125,6 +126,35 @@ class SupportMessageServiceTest {
 
             assertThat(result.getContent()).containsExactly(dto);
             Mockito.verify(supportMessageRepository, Mockito.never()).findAll(pageable);
+        }
+    }
+
+    @Nested
+    class Resolve {
+
+        @Test
+        void givenValidId_whenResolve_thenSetResolvedTrueAndSave() {
+            SupportMessage message = SupportMessage.builder().id(5L).resolved(false).build();
+            SupportMessageResponseDTO dto = SupportMessageResponseDTO.builder().id(5L).resolved(true).build();
+
+            Mockito.when(supportMessageRepository.findById(5L)).thenReturn(Optional.of(message));
+            Mockito.when(supportMessageRepository.save(message)).thenReturn(message);
+            Mockito.when(supportMessageMapper.toResponseDTO(message)).thenReturn(dto);
+
+            SupportMessageResponseDTO response = supportMessageService.resolve(5L);
+
+            assertThat(response).isEqualTo(dto);
+            assertThat(message.isResolved()).isTrue();
+        }
+
+        @Test
+        void givenInvalidId_whenResolve_thenThrowResourceNotFoundException() {
+            Mockito.when(supportMessageRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> supportMessageService.resolve(99L))
+                    .isInstanceOf(ResourceNotFoundException.class);
+
+            Mockito.verify(supportMessageRepository, Mockito.never()).save(any());
         }
     }
 }

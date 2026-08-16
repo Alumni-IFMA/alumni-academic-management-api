@@ -5,6 +5,7 @@ import com.alumni.academic_management_api.dto.support.SupportMessageResponseDTO;
 import com.alumni.academic_management_api.entity.SupportMessage;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.exception.BusinessException;
+import com.alumni.academic_management_api.exception.ResourceNotFoundException;
 import com.alumni.academic_management_api.mapper.SupportMessageMapper;
 import com.alumni.academic_management_api.repository.SupportMessageRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -52,5 +53,14 @@ public class SupportMessageService {
                 : supportMessageRepository.findAll(pageable);
 
         return page.map(supportMessageMapper::toResponseDTO);
+    }
+
+    public SupportMessageResponseDTO resolve(Long id) {
+        SupportMessage message = supportMessageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Support message not found with id: " + id));
+
+        message.setResolved(true);
+
+        return supportMessageMapper.toResponseDTO(supportMessageRepository.save(message));
     }
 }

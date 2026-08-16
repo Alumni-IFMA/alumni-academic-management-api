@@ -35,9 +35,8 @@ public class SupportMessage {
     @ToString.Include
     private Long id;
 
-    @NotNull
     @ManyToOne(targetEntity = User.class, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @NotNull

@@ -127,6 +127,22 @@ class SupportMessageServiceTest {
             assertThat(result.getContent()).containsExactly(dto);
             Mockito.verify(supportMessageRepository, Mockito.never()).findAll(pageable);
         }
+
+        @Test
+        void givenResolvedFalseFilter_whenFindAll_thenReturnFilteredPaged() {
+            Pageable pageable = PageRequest.of(0, 10);
+            SupportMessage message = SupportMessage.builder().id(3L).resolved(false).build();
+            SupportMessageResponseDTO dto = SupportMessageResponseDTO.builder().id(3L).resolved(false).build();
+
+            Mockito.when(supportMessageRepository.findByResolved(false, pageable))
+                    .thenReturn(new PageImpl<>(List.of(message)));
+            Mockito.when(supportMessageMapper.toResponseDTO(message)).thenReturn(dto);
+
+            Page<SupportMessageResponseDTO> result = supportMessageService.findAll(false, pageable);
+
+            assertThat(result.getContent()).containsExactly(dto);
+            Mockito.verify(supportMessageRepository, Mockito.never()).findAll(pageable);
+        }
     }
 
     @Nested

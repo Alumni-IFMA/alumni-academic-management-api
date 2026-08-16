@@ -7,13 +7,17 @@ import com.alumni.academic_management_api.service.SupportMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("/support")
+@Tag(name = "Suporte", description = "Envio e gestão de mensagens de suporte")
 public class SupportMessageController {
 
     private final SupportMessageService supportMessageService;
@@ -42,7 +47,8 @@ public class SupportMessageController {
     @Operation(summary = "Enviar mensagem de suporte")
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Mensagem enviada com sucesso"),
+        @ApiResponse(responseCode = "201", description = "Mensagem enviada com sucesso",
+            content = @Content(schema = @Schema(implementation = SupportMessageResponseDTO.class))),
         @ApiResponse(responseCode = "400", description = "Corpo da requisição inválido", content = @Content),
         @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content)
     })
@@ -65,7 +71,7 @@ public class SupportMessageController {
     public ResponseEntity<Page<SupportMessageResponseDTO>> findAll(
             @Parameter(description = "Filtra por mensagens resolvidas ou não")
             @RequestParam(required = false) Boolean resolved,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         log.debug("REST request to list support messages: resolved={}", resolved);
         return ResponseEntity.ok(supportMessageService.findAll(resolved, pageable));
     }
@@ -74,7 +80,8 @@ public class SupportMessageController {
     @Operation(summary = "Resolver mensagem de suporte", description = "Acesso restrito a administradores.")
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Mensagem marcada como resolvida"),
+        @ApiResponse(responseCode = "200", description = "Mensagem marcada como resolvida",
+            content = @Content(schema = @Schema(implementation = SupportMessageResponseDTO.class))),
         @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
         @ApiResponse(responseCode = "403", description = "Acesso negado", content = @Content),
         @ApiResponse(responseCode = "404", description = "Mensagem não encontrada", content = @Content)

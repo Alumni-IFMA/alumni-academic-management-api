@@ -153,6 +153,23 @@ class SupportMessageControllerIT {
         }
 
         @Test
+        @WithMockUser(roles = "ADMIN")
+        void givenResolvedFalseFilter_whenFindAll_thenReturnOnlyUnresolved() throws Exception {
+            User user = saveUser(USER_EMAIL, "66666666666");
+            supportMessageRepository.save(SupportMessage.builder()
+                    .user(user).name(user.getName()).email(user.getEmail())
+                    .subject("Não resolvida").message("Mensagem").resolved(false).build());
+            supportMessageRepository.save(SupportMessage.builder()
+                    .user(user).name(user.getName()).email(user.getEmail())
+                    .subject("Resolvida").message("Mensagem").resolved(true).build());
+
+            mockMvc.perform(get(URL).param("resolved", "false"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.content[0].subject").value("Não resolvida"));
+        }
+
+        @Test
         @WithMockUser(roles = "ALUMNI")
         void givenNonAdmin_whenFindAll_thenReturn403() throws Exception {
             mockMvc.perform(get(URL))
@@ -198,6 +215,12 @@ class SupportMessageControllerIT {
         void givenNonAdmin_whenResolve_thenReturn403() throws Exception {
             mockMvc.perform(patch(url(1L)))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void givenNoToken_whenResolve_thenReturn401() throws Exception {
+            mockMvc.perform(patch(url(1L)))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

@@ -1,6 +1,6 @@
 CREATE TABLE support_messages (
     id          BIGSERIAL PRIMARY KEY,
-    user_id     BIGINT NOT NULL,
+    user_id     BIGINT,
     name        VARCHAR(255) NOT NULL,
     email       VARCHAR(255) NOT NULL,
     subject     VARCHAR(255) NOT NULL,
@@ -10,4 +10,5 @@ CREATE TABLE support_messages (
 
     CONSTRAINT fk_support_messages_user
         FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE SET NULL
 );

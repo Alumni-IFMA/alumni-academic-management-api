@@ -8,6 +8,8 @@ import com.alumni.academic_management_api.exception.BusinessException;
 import com.alumni.academic_management_api.mapper.SupportMessageMapper;
 import com.alumni.academic_management_api.repository.SupportMessageRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,5 +43,14 @@ public class SupportMessageService {
                 .build();
 
         return supportMessageMapper.toResponseDTO(supportMessageRepository.save(message));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SupportMessageResponseDTO> findAll(Boolean resolved, Pageable pageable) {
+        Page<SupportMessage> page = resolved != null
+                ? supportMessageRepository.findByResolved(resolved, pageable)
+                : supportMessageRepository.findAll(pageable);
+
+        return page.map(supportMessageMapper::toResponseDTO);
     }
 }

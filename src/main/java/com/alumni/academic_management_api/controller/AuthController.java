@@ -3,7 +3,9 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.auth.ForgotPasswordRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.auth.LoginResponseDTO;
+import com.alumni.academic_management_api.dto.auth.MessageResponseDTO;
 import com.alumni.academic_management_api.dto.auth.ResetPasswordRequestDTO;
+import com.alumni.academic_management_api.dto.auth.SetPasswordRequestDTO;
 import com.alumni.academic_management_api.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -75,6 +77,26 @@ public class AuthController {
         log.debug("REST request to reset password");
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/set-password")
+    @Operation(summary = "Definir senha pela primeira vez", description = "Valida o token de definição de senha "
+            + "recebido por e-mail após aprovação do cadastro e define a senha inicial do usuário.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Senha definida com sucesso",
+                    content = @Content(schema = @Schema(implementation = MessageResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Senhas não coincidem, senha fraca ou usuário "
+                    + "não está ativo",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Token não encontrado",
+                    content = @Content),
+            @ApiResponse(responseCode = "410", description = "Token já utilizado ou expirado",
+                    content = @Content)
+    })
+    public ResponseEntity<MessageResponseDTO> setPassword(@RequestBody @Valid SetPasswordRequestDTO request) {
+        log.debug("REST request to set password");
+        authService.setPassword(request.getToken(), request.getPassword(), request.getPasswordConfirmation());
+        return ResponseEntity.ok(new MessageResponseDTO("Senha definida com sucesso"));
     }
 
 }

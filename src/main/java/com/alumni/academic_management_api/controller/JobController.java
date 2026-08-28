@@ -4,12 +4,15 @@ import com.alumni.academic_management_api.dto.job.JobRequestDTO;
 import com.alumni.academic_management_api.dto.job.JobResponseDTO;
 import com.alumni.academic_management_api.enums.ExperienceLevel;
 import com.alumni.academic_management_api.service.JobService;
+import com.alumni.academic_management_api.service.SavedJobService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,9 +32,11 @@ import java.util.List;
 public class JobController {
 
     private final JobService jobService;
+    private final SavedJobService savedJobService;
 
-    public JobController(JobService jobService) {
+    public JobController(JobService jobService, SavedJobService savedJobService) {
         this.jobService = jobService;
+        this.savedJobService = savedJobService;
     }
 
     @PostMapping
@@ -63,6 +68,37 @@ public class JobController {
         log.debug("REST request to get job: {}", id);
 
         return ResponseEntity.ok(jobService.findById(id));
+    }
+
+    @GetMapping("/saved")
+    public ResponseEntity<List<JobResponseDTO>> findSavedJobs(@AuthenticationPrincipal UserDetails userDetails) {
+        log.debug("REST request to list saved jobs");
+
+        return ResponseEntity.ok(savedJobService.findSavedJobs(userDetails.getUsername()));
+    }
+
+    @PostMapping("/{id}/save")
+    public ResponseEntity<Void> saveJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        log.debug("REST request to save job: {}", id);
+
+        savedJobService.saveJob(userDetails.getUsername(), id);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/{id}/save")
+    public ResponseEntity<Void> unsaveJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        log.debug("REST request to unsave job: {}", id);
+
+        savedJobService.unsaveJob(userDetails.getUsername(), id);
+
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")

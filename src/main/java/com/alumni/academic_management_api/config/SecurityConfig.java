@@ -65,6 +65,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/auth/set-password",
                                 "/auth/set-password/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/jobs/saved").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/jobs/*/save").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/jobs/*/save").authenticated()
                         .requestMatchers(HttpMethod.GET, "/jobs", "/jobs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/jobs").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/jobs/**").hasRole("ADMIN")

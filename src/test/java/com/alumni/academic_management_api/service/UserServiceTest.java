@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.service;
 
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
+import com.alumni.academic_management_api.dto.user.AlumniSearchResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
 import com.alumni.academic_management_api.entity.AcademicProfile;
 import com.alumni.academic_management_api.entity.CampusCourse;
@@ -203,6 +204,22 @@ class UserServiceTest {
             assertThat(result)
                     .isNotNull()
                     .isEmpty();
+        }
+    }
+
+    @Nested
+    class SearchByName {
+        @Test
+        void givenFilters_whenSearchUsers_thenReturnMappedUsers() {
+            User user = User.builder().name("João Silva").build();
+            AlumniSearchResponseDTO dto = AlumniSearchResponseDTO.builder().name("João Silva").build();
+
+            Mockito.when(userRepository.searchUsers(1L, 2L, "joão")).thenReturn(List.of(user));
+            Mockito.when(userMapper.toAlumniSearchResponseDTO(user)).thenReturn(dto);
+
+            List<AlumniSearchResponseDTO> result = userService.searchUsers(1L, 2L, "joão");
+
+            assertThat(result).containsExactly(dto);
         }
     }
 

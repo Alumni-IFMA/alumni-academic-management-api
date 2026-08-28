@@ -3,9 +3,13 @@ package com.alumni.academic_management_api.controller;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.entity.AcademicProfile;
 import com.alumni.academic_management_api.entity.CampusCourse;
+import com.alumni.academic_management_api.entity.Campus;
+import com.alumni.academic_management_api.entity.Course;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.Role;
+import com.alumni.academic_management_api.enums.Level;
+import com.alumni.academic_management_api.enums.Modality;
 import com.alumni.academic_management_api.repository.AcademicProfileRepository;
 import com.alumni.academic_management_api.repository.CampusesCourseRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
@@ -13,6 +17,7 @@ import com.alumni.academic_management_api.service.FileStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -64,6 +69,9 @@ class UserControllerIT {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
 
     @Nested
@@ -134,6 +142,85 @@ class UserControllerIT {
             mockMvc.perform(get(URL))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray());
+        }
+    }
+
+    @Nested
+    class SearchByName {
+
+        private static final String URL = "/auth/users/search";
+
+        @Test
+        @WithMockUser
+        void givenNameFragment_whenSearch_thenReturnMatchingUsers() throws Exception {
+            userRepository.save(User.builder()
+                    .name("João da Silva")
+                    .cpf("12345678901")
+                    .email("joao.search@test.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+            userRepository.save(User.builder()
+                    .name("Maria Souza")
+                    .cpf("12345678902")
+                    .email("maria.search@test.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+
+            mockMvc.perform(get(URL).param("name", "joão"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].name").value("João da Silva"));
+        }
+
+        @Test
+        @WithMockUser
+        void givenCampusAndCourse_whenSearch_thenReturnOnlyUsersFromThatAcademicProfile() throws Exception {
+            Campus campus = Campus.builder().name("Campus Centro").city("São Luís").build();
+            Course course = Course.builder().name("Computação").level(Level.GRADUACAO).modality(Modality.BACHARELADO).build();
+            entityManager.persist(campus);
+            entityManager.persist(course);
+            CampusCourse campusCourse = CampusCourse.builder().campus(campus).course(course).build();
+            entityManager.persist(campusCourse);
+
+            User matchingUser = userRepository.save(User.builder()
+                    .name("Ana Lima")
+                    .cpf("12345678903")
+                    .email("ana.search@test.com")
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+            User suspendedUser = userRepository.save(User.builder()
+                    .name("Ana Suspensa")
+                    .cpf("12345678904")
+                    .email("ana.suspended@test.com")
+                    .accountStatus(AccountStatus.SUSPENDED)
+                    .role(Role.ALUMNI)
+                    .build());
+            entityManager.persist(AcademicProfile.builder()
+                    .user(matchingUser).campusCourse(campusCourse).entryYear(2020).conclusionYear(2024).build());
+            entityManager.persist(AcademicProfile.builder()
+                    .user(suspendedUser).campusCourse(campusCourse).entryYear(2020).conclusionYear(2024).build());
+            entityManager.flush();
+            entityManager.clear();
+
+            mockMvc.perform(get(URL)
+                            .param("campusId", campus.getId().toString())
+                            .param("courseId", course.getId().toString())
+                            .param("name", "ana"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].name").value("Ana Lima"))
+                    .andExpect(jsonPath("$[0].campus").value("Campus Centro"))
+                    .andExpect(jsonPath("$[0].course").value("Computação"));
+        }
+
+        @Test
+        void givenNoToken_whenSearch_thenReturn401() throws Exception {
+            mockMvc.perform(get(URL).param("name", "joão"))
+                    .andExpect(status().isUnauthorized());
         }
     }
 

@@ -1,6 +1,7 @@
 package com.alumni.academic_management_api.mapper;
 
 import com.alumni.academic_management_api.dto.user.AcademicProfileResponseDTO;
+import com.alumni.academic_management_api.dto.user.AlumniSearchResponseDTO;
 import com.alumni.academic_management_api.dto.user.RegisterRequestDTO;
 import com.alumni.academic_management_api.dto.user.UserProfileResponseDTO;
 import com.alumni.academic_management_api.dto.user.UserSimpleDTO;
@@ -20,6 +21,18 @@ public interface UserMapper {
     UserSimpleDTO toSimpleDTO(User user);
 
     List<UserSimpleDTO> toSimpleDTOList(List<User> user);
+
+    default AlumniSearchResponseDTO toAlumniSearchResponseDTO(User user) {
+        AcademicProfile academicProfile = user.getAcademicProfiles().stream().findFirst().orElse(null);
+
+        return AlumniSearchResponseDTO.builder()
+                .name(user.getName())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .currentPosition(user.getCurrentPosition())
+                .campus(academicProfile == null ? null : academicProfile.getCampusCourse().getCampus().getName())
+                .course(academicProfile == null ? null : academicProfile.getCampusCourse().getCourse().getName())
+                .build();
+    }
 
     UserProfileResponseDTO toProfileDTO(User user);
 

@@ -1,10 +1,20 @@
 package com.alumni.academic_management_api.controller;
 
+import com.alumni.academic_management_api.config.OpenApiConfig;
 import com.alumni.academic_management_api.dto.job.JobRequestDTO;
 import com.alumni.academic_management_api.dto.job.JobResponseDTO;
 import com.alumni.academic_management_api.enums.ExperienceLevel;
 import com.alumni.academic_management_api.service.JobService;
 import com.alumni.academic_management_api.service.SavedJobService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,6 +39,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/jobs")
+@Tag(name = "Vagas", description = "Publicação, consulta e gerenciamento de vagas de emprego")
 public class JobController {
 
     private final JobService jobService;
@@ -40,6 +51,18 @@ public class JobController {
     }
 
     @PostMapping
+    @Operation(
+            summary = "Cadastrar vaga",
+            description = "Cria uma nova vaga de emprego. Requer perfil ADMIN."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Vaga criada com sucesso",
+                    content = @Content(schema = @Schema(implementation = JobResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão de ADMIN", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<JobResponseDTO> create(@RequestBody @Valid JobRequestDTO request) {
         log.debug("REST request to create job");
 
@@ -47,6 +70,14 @@ public class JobController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "Listar vagas",
+            description = "Retorna uma página de vagas ativas, com filtros opcionais por palavra-chave, área, "
+                    + "nível de experiência, localização, salário mínimo e modalidade remota."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de vagas retornada com sucesso")
+    })
     public ResponseEntity<Page<JobResponseDTO>> findAll(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String area,
@@ -64,6 +95,15 @@ public class JobController {
     }
 
     @GetMapping("/{id}")
+    @Operation(
+            summary = "Buscar vaga por ID",
+            description = "Retorna os detalhes de uma vaga específica."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Vaga encontrada",
+                    content = @Content(schema = @Schema(implementation = JobResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Vaga não encontrada", content = @Content)
+    })
     public ResponseEntity<JobResponseDTO> findById(@PathVariable Long id) {
         log.debug("REST request to get job: {}", id);
 
@@ -71,6 +111,17 @@ public class JobController {
     }
 
     @GetMapping("/saved")
+    @Operation(
+            summary = "Listar vagas salvas",
+            description = "Retorna a lista de vagas salvas pelo usuário autenticado, da mais recente para a mais "
+                    + "antiga."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de vagas salvas retornada com sucesso",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = JobResponseDTO.class)))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<List<JobResponseDTO>> findSavedJobs(@AuthenticationPrincipal UserDetails userDetails) {
         log.debug("REST request to list saved jobs");
 
@@ -78,8 +129,20 @@ public class JobController {
     }
 
     @PostMapping("/{id}/save")
+    @Operation(
+            summary = "Salvar vaga",
+            description = "Salva uma vaga para o usuário autenticado, permitindo consultá-la depois na lista de "
+                    + "vagas salvas."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Vaga salva com sucesso", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Vaga já foi salva anteriormente", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Vaga não encontrada", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<Void> saveJob(
-            @PathVariable Long id,
+            @Parameter(description = "ID da vaga") @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to save job: {}", id);
@@ -90,8 +153,18 @@ public class JobController {
     }
 
     @DeleteMapping("/{id}/save")
+    @Operation(
+            summary = "Remover vaga salva",
+            description = "Remove uma vaga da lista de vagas salvas do usuário autenticado."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Vaga removida da lista de salvas", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Vaga não estava salva", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<Void> unsaveJob(
-            @PathVariable Long id,
+            @Parameter(description = "ID da vaga") @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         log.debug("REST request to unsave job: {}", id);
@@ -102,6 +175,19 @@ public class JobController {
     }
 
     @PutMapping("/{id}")
+    @Operation(
+            summary = "Atualizar vaga",
+            description = "Atualiza os dados de uma vaga existente. Requer perfil ADMIN."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Vaga atualizada com sucesso",
+                    content = @Content(schema = @Schema(implementation = JobResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão de ADMIN", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Vaga não encontrada", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<JobResponseDTO> update(
             @PathVariable Long id,
             @RequestBody @Valid JobRequestDTO request
@@ -112,6 +198,17 @@ public class JobController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Desativar vaga",
+            description = "Desativa uma vaga, removendo-a das listagens públicas. Requer perfil ADMIN."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Vaga desativada com sucesso", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sem permissão de ADMIN", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Vaga não encontrada", content = @Content)
+    })
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         log.debug("REST request to deactivate job: {}", id);
 

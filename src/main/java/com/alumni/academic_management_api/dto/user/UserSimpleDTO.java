@@ -27,7 +27,7 @@ public class UserSimpleDTO implements Serializable {
     @Schema(description = "E-mail", example = "joao@example.com")
     String email;
 
-    @Schema(description = "URL da foto de perfil armazenada no MinIO")
+    @Schema(description = "URL assinada (temporária) da foto de perfil armazenada no bucket")
     String profilePictureUrl;
 
     List<AcademicProfileResponseDTO> academicProfiles;

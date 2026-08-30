@@ -30,7 +30,7 @@ public class UserProfileResponseDTO implements Serializable {
     @Schema(description = "Biografia ou apresentação pessoal")
     String bio;
 
-    @Schema(description = "URL da foto de perfil armazenada no MinIO")
+    @Schema(description = "URL assinada (temporária) da foto de perfil armazenada no bucket")
     String profilePictureUrl;
 
     @Schema(description = "URL do perfil no LinkedIn")

@@ -25,6 +25,7 @@ import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -225,8 +226,12 @@ class ConnectionControllerIT {
         @Test
         void givenAcceptedConnectionWithProfilePicture_whenFindAcceptedConnections_thenReturnProfilePictureUrl()
                 throws Exception {
+            String objectKey = "avatars/requester.jpg";
+            String presignedUrl = "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"
+                    + "?X-Amz-Signature=xyz";
+            Mockito.when(fileStorageService.generatePresignedUrl(objectKey, 15)).thenReturn(presignedUrl);
             User requester = createUserWithProfilePicture("Requester", "requester@test.com", "11111111111",
-                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg");
+                    Role.ALUMNI, objectKey);
             User addressee = createUser("Addressee", "addressee@test.com", "22222222222", Role.ALUMNI);
             connectionRepository.save(Connection.builder()
                     .requester(requester)
@@ -241,8 +246,7 @@ class ConnectionControllerIT {
             mockMvc.perform(get(BASE_URL)
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].requester.profilePictureUrl")
-                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"));
+                    .andExpect(jsonPath("$[0].requester.profilePictureUrl").value(presignedUrl));
         }
     }
 
@@ -278,8 +282,12 @@ class ConnectionControllerIT {
         @Test
         void givenRequesterWithProfilePicture_whenFindPendingReceivedRequests_thenReturnProfilePictureUrl()
                 throws Exception {
+            String objectKey = "avatars/requester.jpg";
+            String presignedUrl = "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"
+                    + "?X-Amz-Signature=xyz";
+            Mockito.when(fileStorageService.generatePresignedUrl(objectKey, 15)).thenReturn(presignedUrl);
             User requester = createUserWithProfilePicture("Requester", "requester@test.com", "11111111111",
-                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg");
+                    Role.ALUMNI, objectKey);
             User addressee = createUser("Addressee", "addressee@test.com", "22222222222", Role.ALUMNI);
             connectionRepository.save(Connection.builder()
                     .requester(requester)
@@ -294,8 +302,7 @@ class ConnectionControllerIT {
             mockMvc.perform(get(BASE_URL + "/pending")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].requester.profilePictureUrl")
-                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"));
+                    .andExpect(jsonPath("$[0].requester.profilePictureUrl").value(presignedUrl));
         }
     }
 
@@ -330,9 +337,13 @@ class ConnectionControllerIT {
 
         @Test
         void givenAddresseeWithProfilePicture_whenFindSentRequests_thenReturnProfilePictureUrl() throws Exception {
+            String objectKey = "avatars/addressee.jpg";
+            String presignedUrl = "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/addressee.jpg"
+                    + "?X-Amz-Signature=xyz";
+            Mockito.when(fileStorageService.generatePresignedUrl(objectKey, 15)).thenReturn(presignedUrl);
             User requester = createUser("Requester", "requester@test.com", "11111111111", Role.ALUMNI);
             User addressee = createUserWithProfilePicture("Addressee", "addressee@test.com", "22222222222",
-                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/addressee.jpg");
+                    Role.ALUMNI, objectKey);
             connectionRepository.save(Connection.builder()
                     .requester(requester)
                     .addressee(addressee)
@@ -346,8 +357,7 @@ class ConnectionControllerIT {
             mockMvc.perform(get(BASE_URL + "/sent")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].addressee.profilePictureUrl")
-                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/addressee.jpg"));
+                    .andExpect(jsonPath("$[0].addressee.profilePictureUrl").value(presignedUrl));
         }
     }
 

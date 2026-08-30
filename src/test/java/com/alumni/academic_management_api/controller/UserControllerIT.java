@@ -253,15 +253,19 @@ class UserControllerIT {
                     .accountStatus(AccountStatus.PENDING_VERIFICATION)
                     .role(Role.ALUMNI)
                     .build());
-            String expectedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
-            Mockito.when(fileStorageService.uploadFile(any(), any())).thenReturn(expectedUrl);
+            String uploadedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
+            String objectKey = "profile-pictures/uuid.jpg";
+            String presignedUrl = uploadedUrl + "?X-Amz-Signature=xyz";
+            Mockito.when(fileStorageService.uploadFile(any(), any())).thenReturn(uploadedUrl);
+            Mockito.when(fileStorageService.extractObjectName(uploadedUrl)).thenReturn(objectKey);
+            Mockito.when(fileStorageService.generatePresignedUrl(objectKey, 15)).thenReturn(presignedUrl);
             MockMultipartFile file = new MockMultipartFile(
                     "file", "avatar.jpg", "image/jpeg", new byte[]{1, 2, 3}
             );
 
             mockMvc.perform(multipart(URL, user.getId()).file(file))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.profilePictureUrl").value(expectedUrl));
+                    .andExpect(jsonPath("$.profilePictureUrl").value(presignedUrl));
         }
 
         @Test

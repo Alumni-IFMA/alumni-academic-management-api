@@ -79,7 +79,7 @@ public class FileStorageService {
         }
     }
 
-    private String extractObjectName(String fileUrl) {
+    public String extractObjectName(String fileUrl) {
         String prefix = endpoint + "/" + bucketName + "/";
         return fileUrl.startsWith(prefix) ? fileUrl.substring(prefix.length()) : fileUrl;
     }

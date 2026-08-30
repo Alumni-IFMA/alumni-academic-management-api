@@ -442,29 +442,33 @@ class UserServiceTest {
     class UploadProfilePicture {
 
         @Test
-        void givenExistingUserWithNoPicture_whenUploadProfilePicture_thenReturnNewUrl() {
+        void givenExistingUserWithNoPicture_whenUploadProfilePicture_thenStoreKeyAndReturnPresignedUrl() {
             Long userId = 1L;
             User user = User.builder().id(userId).build();
             MockMultipartFile file = new MockMultipartFile(
                     "file", "avatar.jpg", "image/jpeg", new byte[]{1, 2, 3}
             );
-            String expectedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
+            String uploadedUrl = "http://localhost:9000/alumni-files/profile-pictures/uuid.jpg";
+            String objectKey = "profile-pictures/uuid.jpg";
+            String presignedUrl = uploadedUrl + "?X-Amz-Signature=xyz";
             Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES))
-                    .thenReturn(expectedUrl);
+                    .thenReturn(uploadedUrl);
+            Mockito.when(fileStorageService.extractObjectName(uploadedUrl)).thenReturn(objectKey);
+            Mockito.when(fileStorageService.generatePresignedUrl(objectKey, 15)).thenReturn(presignedUrl);
 
             String result = userService.uploadProfilePicture(userId, file);
 
-            assertThat(result).isEqualTo(expectedUrl);
-            assertThat(user.getProfilePictureUrl()).isEqualTo(expectedUrl);
+            assertThat(result).isEqualTo(presignedUrl);
+            assertThat(user.getProfilePictureUrl()).isEqualTo(objectKey);
             Mockito.verify(userRepository).save(user);
         }
 
         @Test
         void givenUserWithExistingPicture_whenUploadProfilePicture_thenDeleteOldBeforeUploadingNew() {
             Long userId = 1L;
-            String oldUrl = "http://localhost:9000/alumni-files/profile-pictures/old.jpg";
-            User user = User.builder().id(userId).profilePictureUrl(oldUrl).build();
+            String oldObjectKey = "profile-pictures/old.jpg";
+            User user = User.builder().id(userId).profilePictureUrl(oldObjectKey).build();
             MockMultipartFile file = new MockMultipartFile(
                     "file", "new.jpg", "image/jpeg", new byte[]{1}
             );
@@ -472,10 +476,12 @@ class UserServiceTest {
             Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             Mockito.when(fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES))
                     .thenReturn(newUrl);
+            Mockito.when(fileStorageService.extractObjectName(newUrl))
+                    .thenReturn("profile-pictures/new-uuid.jpg");
 
             userService.uploadProfilePicture(userId, file);
 
-            Mockito.verify(fileStorageService).deleteFile(oldUrl);
+            Mockito.verify(fileStorageService).deleteFile(oldObjectKey);
             Mockito.verify(fileStorageService).uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES);
         }
 

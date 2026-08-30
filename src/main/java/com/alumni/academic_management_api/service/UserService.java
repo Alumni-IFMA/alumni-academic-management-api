@@ -110,10 +110,11 @@ public class UserService {
         if (user.getProfilePictureUrl() != null) {
             fileStorageService.deleteFile(user.getProfilePictureUrl());
         }
-        String url = fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES);
-        user.setProfilePictureUrl(url);
+        String uploadedUrl = fileStorageService.uploadFile(file, FileStorageService.FOLDER_PROFILE_PICTURES);
+        String objectKey = fileStorageService.extractObjectName(uploadedUrl);
+        user.setProfilePictureUrl(objectKey);
         userRepository.save(user);
-        return url;
+        return fileStorageService.generatePresignedUrl(objectKey, 15);
     }
 
     public UserSimpleDTO updateUserRole(Long targetId, Role newRole, String authenticatedEmail) {

@@ -21,8 +21,10 @@ class UserMapperTest {
     @BeforeEach
     void setUp() {
         fileStorageService = Mockito.mock(FileStorageService.class);
-        userMapper = new UserMapperImpl();
-        userMapper.fileStorageService = fileStorageService;
+        UserMapperDecorator mapper = new UserMapperImpl();
+        mapper.delegate = new UserMapperImpl_();
+        mapper.fileStorageService = fileStorageService;
+        userMapper = mapper;
     }
 
     @Nested

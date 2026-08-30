@@ -77,9 +77,9 @@ class ConnectionServiceTest {
                     .build();
             ConnectionResponseDTO expectedResponse = ConnectionResponseDTO.builder()
                     .id(10L)
-                    .requester(new UserSimpleDTO(requesterId, "Requester", "requester@test.com",
+                    .requester(new UserSimpleDTO(requesterId, "Requester", "requester@test.com", null,
                             List.of(), null, Role.ALUMNI))
-                    .addressee(new UserSimpleDTO(addresseeId, "Addressee", "addressee@test.com",
+                    .addressee(new UserSimpleDTO(addresseeId, "Addressee", "addressee@test.com", null,
                             List.of(), null, Role.ALUMNI))
                     .status(ConnectionStatus.PENDING)
                     .build();
@@ -201,9 +201,9 @@ class ConnectionServiceTest {
                     .build();
             ConnectionResponseDTO expectedResponse = ConnectionResponseDTO.builder()
                     .id(connectionId)
-                    .requester(new UserSimpleDTO(requesterId, "Requester", "requester@test.com",
+                    .requester(new UserSimpleDTO(requesterId, "Requester", "requester@test.com", null,
                             List.of(), null, Role.ALUMNI))
-                    .addressee(new UserSimpleDTO(addresseeId, "Addressee", "addressee@test.com",
+                    .addressee(new UserSimpleDTO(addresseeId, "Addressee", "addressee@test.com", null,
                             List.of(), null, Role.ALUMNI))
                     .status(ConnectionStatus.ACCEPTED)
                     .build();

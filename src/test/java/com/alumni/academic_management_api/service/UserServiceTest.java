@@ -84,6 +84,7 @@ class UserServiceTest {
                     1L,
                     "João",
                     "joao@email.com",
+                    null,
                     List.of(),
                     AccountStatus.PENDING_VERIFICATION,
                     Role.ALUMNI
@@ -179,6 +180,7 @@ class UserServiceTest {
                     1L,
                     "João",
                     "joao@email.com",
+                    null,
                     List.of(),
                     AccountStatus.PENDING_VERIFICATION,
                     Role.ALUMNI
@@ -223,6 +225,7 @@ class UserServiceTest {
                     1L,
                     "João",
                     "joao@email.com",
+                    null,
                     List.of(),
                     AccountStatus.PENDING_VERIFICATION,
                     Role.ALUMNI
@@ -290,6 +293,7 @@ class UserServiceTest {
                     targetId,
                     "Target",
                     "target@test.com",
+                    null,
                     List.of(),
                     AccountStatus.PENDING_VERIFICATION,
                     Role.ADMIN
@@ -356,6 +360,7 @@ class UserServiceTest {
                     userId,
                     "João",
                     "joao@email.com",
+                    null,
                     List.of(),
                     AccountStatus.ACTIVE,
                     Role.ALUMNI

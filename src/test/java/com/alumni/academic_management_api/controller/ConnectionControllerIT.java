@@ -77,6 +77,45 @@ class ConnectionControllerIT {
                 .build());
     }
 
+    private User createUserWithProfilePicture(String name, String email, String cpf, Role role, String pictureUrl) {
+        return userRepository.save(User.builder()
+                .name(name)
+                .cpf(cpf)
+                .email(email)
+                .password(passwordEncoder.encode(PASSWORD))
+                .accountStatus(AccountStatus.ACTIVE)
+                .role(role)
+                .profilePictureUrl(pictureUrl)
+                .build());
+    }
+
+    private CampusCourse createCampusCourse() {
+        Campus campus = entityManager.merge(Campus.builder()
+                .name("Campus Central")
+                .city("São Luís")
+                .build());
+        Course course = entityManager.merge(Course.builder()
+                .name("Engenharia")
+                .level(Level.GRADUACAO)
+                .modality(Modality.BACHARELADO)
+                .build());
+        return campusesCourseRepository.save(CampusCourse.builder()
+                .campus(campus)
+                .course(course)
+                .build());
+    }
+
+    private User createUserWithAcademicProfile(String name, String email, String cpf, CampusCourse campusCourse) {
+        User user = createUser(name, email, cpf, Role.ALUMNI);
+        academicProfileRepository.save(AcademicProfile.builder()
+                .user(user)
+                .campusCourse(campusCourse)
+                .entryYear(2020)
+                .conclusionYear(2024)
+                .build());
+        return user;
+    }
+
     private String loginAndGetToken(String email) throws Exception {
         String response = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,6 +203,29 @@ class ConnectionControllerIT {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
         }
+
+        @Test
+        void givenAcceptedConnectionWithProfilePicture_whenFindAcceptedConnections_thenReturnProfilePictureUrl()
+                throws Exception {
+            User requester = createUserWithProfilePicture("Requester", "requester@test.com", "11111111111",
+                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg");
+            User addressee = createUser("Addressee", "addressee@test.com", "22222222222", Role.ALUMNI);
+            connectionRepository.save(Connection.builder()
+                    .requester(requester)
+                    .addressee(addressee)
+                    .userLowId(Math.min(requester.getId(), addressee.getId()))
+                    .userHighId(Math.max(requester.getId(), addressee.getId()))
+                    .status(ConnectionStatus.ACCEPTED)
+                    .build());
+
+            String token = loginAndGetToken(addressee.getEmail());
+
+            mockMvc.perform(get(BASE_URL)
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].requester.profilePictureUrl")
+                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"));
+        }
     }
 
     @Nested
@@ -194,6 +256,29 @@ class ConnectionControllerIT {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].status").value("PENDING"));
         }
+
+        @Test
+        void givenRequesterWithProfilePicture_whenFindPendingReceivedRequests_thenReturnProfilePictureUrl()
+                throws Exception {
+            User requester = createUserWithProfilePicture("Requester", "requester@test.com", "11111111111",
+                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg");
+            User addressee = createUser("Addressee", "addressee@test.com", "22222222222", Role.ALUMNI);
+            connectionRepository.save(Connection.builder()
+                    .requester(requester)
+                    .addressee(addressee)
+                    .userLowId(Math.min(requester.getId(), addressee.getId()))
+                    .userHighId(Math.max(requester.getId(), addressee.getId()))
+                    .status(ConnectionStatus.PENDING)
+                    .build());
+
+            String token = loginAndGetToken(addressee.getEmail());
+
+            mockMvc.perform(get(BASE_URL + "/pending")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].requester.profilePictureUrl")
+                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/requester.jpg"));
+        }
     }
 
     @Nested
@@ -223,6 +308,28 @@ class ConnectionControllerIT {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].status").value("PENDING"));
+        }
+
+        @Test
+        void givenAddresseeWithProfilePicture_whenFindSentRequests_thenReturnProfilePictureUrl() throws Exception {
+            User requester = createUser("Requester", "requester@test.com", "11111111111", Role.ALUMNI);
+            User addressee = createUserWithProfilePicture("Addressee", "addressee@test.com", "22222222222",
+                    Role.ALUMNI, "https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/addressee.jpg");
+            connectionRepository.save(Connection.builder()
+                    .requester(requester)
+                    .addressee(addressee)
+                    .userLowId(Math.min(requester.getId(), addressee.getId()))
+                    .userHighId(Math.max(requester.getId(), addressee.getId()))
+                    .status(ConnectionStatus.PENDING)
+                    .build());
+
+            String token = loginAndGetToken(requester.getEmail());
+
+            mockMvc.perform(get(BASE_URL + "/sent")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].addressee.profilePictureUrl")
+                            .value("https://s3.us-east-005.backblazeb2.com/alumni-files/avatars/addressee.jpg"));
         }
     }
 

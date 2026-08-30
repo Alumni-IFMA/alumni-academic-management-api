@@ -104,4 +104,24 @@ class FileStorageServiceTest {
             assertThat(result).isEqualTo(expected);
         }
     }
+
+    @Nested
+    class ExtractObjectName {
+
+        @Test
+        void givenPublicUrl_whenExtractObjectName_thenReturnObjectKeyWithoutPrefix() {
+            String fileUrl = ENDPOINT + "/" + BUCKET + "/profile-pictures/abc.jpg";
+
+            String result = fileStorageService.extractObjectName(fileUrl);
+
+            assertThat(result).isEqualTo("profile-pictures/abc.jpg");
+        }
+
+        @Test
+        void givenBareObjectKey_whenExtractObjectName_thenReturnKeyUnchanged() {
+            String result = fileStorageService.extractObjectName("profile-pictures/abc.jpg");
+
+            assertThat(result).isEqualTo("profile-pictures/abc.jpg");
+        }
+    }
 }

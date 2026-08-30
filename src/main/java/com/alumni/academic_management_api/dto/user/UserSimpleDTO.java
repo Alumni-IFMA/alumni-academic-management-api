@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.List;
@@ -27,7 +28,8 @@ public class UserSimpleDTO implements Serializable {
     @Schema(description = "E-mail", example = "joao@example.com")
     String email;
 
-    @Schema(description = "URL da foto de perfil armazenada no MinIO")
+    @Setter
+    @Schema(description = "URL assinada (temporária) da foto de perfil armazenada no bucket")
     String profilePictureUrl;
 
     List<AcademicProfileResponseDTO> academicProfiles;

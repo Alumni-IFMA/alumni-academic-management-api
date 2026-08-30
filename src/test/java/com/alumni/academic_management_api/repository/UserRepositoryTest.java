@@ -1,13 +1,23 @@
 package com.alumni.academic_management_api.repository;
 
+import com.alumni.academic_management_api.entity.AcademicProfile;
+import com.alumni.academic_management_api.entity.Campus;
+import com.alumni.academic_management_api.entity.CampusCourse;
+import com.alumni.academic_management_api.entity.Course;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
+import com.alumni.academic_management_api.enums.Level;
+import com.alumni.academic_management_api.enums.Modality;
 import com.alumni.academic_management_api.enums.Role;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,6 +82,79 @@ class UserRepositoryTest {
             User found = userRepository.findById(savedUser.getId()).orElseThrow();
 
             assertThat(found.getRole()).isEqualTo(Role.ALUMNI);
+        }
+    }
+
+    @Nested
+    class FindDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn {
+
+        private CampusCourse persistCampusCourse() {
+            Campus campus = entityManager.persist(Campus.builder()
+                    .name("Campus Central")
+                    .city("São Luís")
+                    .build());
+            Course course = entityManager.persist(Course.builder()
+                    .name("Engenharia")
+                    .level(Level.GRADUACAO)
+                    .modality(Modality.BACHARELADO)
+                    .build());
+            return entityManager.persist(CampusCourse.builder()
+                    .campus(campus)
+                    .course(course)
+                    .build());
+        }
+
+        private User persistUserWithCampusCourse(String name, String email, CampusCourse campusCourse) {
+            User user = entityManager.persist(User.builder()
+                    .name(name)
+                    .cpf(email)
+                    .email(email)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .role(Role.ALUMNI)
+                    .build());
+            entityManager.persist(AcademicProfile.builder()
+                    .user(user)
+                    .campusCourse(campusCourse)
+                    .entryYear(2020)
+                    .conclusionYear(2024)
+                    .build());
+            return user;
+        }
+
+        @Test
+        void givenUsersInSameCampusCourse_whenFindPaged_thenReturnPageExcludingGivenIds() {
+            CampusCourse campusCourse = persistCampusCourse();
+            User excludedUser = persistUserWithCampusCourse("Excluded", "excluded@test.com", campusCourse);
+            User suggestedUser = persistUserWithCampusCourse("Suggested", "suggested@test.com", campusCourse);
+            entityManager.flush();
+
+            Page<User> result = userRepository.findDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn(
+                    Set.of(campusCourse.getId()),
+                    Set.of(excludedUser.getId()),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).containsExactly(suggestedUser);
+            assertThat(result.getTotalElements()).isEqualTo(1);
+        }
+
+        @Test
+        void givenMoreUsersThanPageSize_whenFindPaged_thenReturnRequestedPageOnly() {
+            CampusCourse campusCourse = persistCampusCourse();
+            User excludedUser = persistUserWithCampusCourse("Excluded", "excluded@test.com", campusCourse);
+            persistUserWithCampusCourse("First", "first@test.com", campusCourse);
+            persistUserWithCampusCourse("Second", "second@test.com", campusCourse);
+            entityManager.flush();
+
+            Page<User> result = userRepository.findDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn(
+                    Set.of(campusCourse.getId()),
+                    Set.of(excludedUser.getId()),
+                    PageRequest.of(0, 1)
+            );
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(result.getTotalPages()).isEqualTo(2);
         }
     }
 }

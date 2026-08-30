@@ -22,6 +22,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -516,27 +520,29 @@ class ConnectionServiceTest {
     class FindSuggestions {
 
         @Test
-        void givenUserWithoutCampusCourse_whenFindSuggestions_thenReturnEmptyList() {
+        void givenUserWithoutCampusCourse_whenFindSuggestions_thenReturnEmptyPage() {
             User authenticatedUser = User.builder()
                     .id(1L)
                     .email("user@test.com")
                     .academicProfiles(List.of())
                     .build();
+            Pageable pageable = PageRequest.of(0, 10);
 
             Mockito.when(userRepository.findByEmail(authenticatedUser.getEmail()))
                     .thenReturn(Optional.of(authenticatedUser));
 
-            List<UserSimpleDTO> result = connectionService.findSuggestions(authenticatedUser.getEmail());
+            Page<UserSimpleDTO> result = connectionService.findSuggestions(authenticatedUser.getEmail(), pageable);
 
             assertThat(result).isEmpty();
             Mockito.verify(connectionRepository, Mockito.never())
                     .findByRequesterIdOrAddresseeId(Mockito.anyLong(), Mockito.anyLong());
             Mockito.verify(userRepository, Mockito.never())
-                    .findDistinctByAcademicProfilesCampusCourseIdInAndIdNot(Mockito.any(), Mockito.anyLong());
+                    .findDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn(
+                            Mockito.any(), Mockito.any(), Mockito.any());
         }
 
         @Test
-        void givenSameCampusCourseUsers_whenFindSuggestions_thenExcludeExistingConnections() {
+        void givenSameCampusCourseUsers_whenFindSuggestions_thenExcludeAuthenticatedAndConnectedUsers() {
             Long authenticatedUserId = 1L;
             Long connectedUserId = 2L;
             Long suggestedUserId = 3L;
@@ -569,32 +575,35 @@ class ConnectionServiceTest {
                     suggestedUserId,
                     "Suggested",
                     "suggested@test.com",
+                    null,
                     List.of(),
                     null,
                     Role.ALUMNI
             );
+            Pageable pageable = PageRequest.of(0, 10);
 
             Mockito.when(userRepository.findByEmail(authenticatedUser.getEmail()))
                     .thenReturn(Optional.of(authenticatedUser));
             Mockito.when(connectionRepository.findByRequesterIdOrAddresseeId(authenticatedUserId, authenticatedUserId))
                     .thenReturn(List.of(existingConnection));
-            Mockito.when(userRepository.findDistinctByAcademicProfilesCampusCourseIdInAndIdNot(
+            Mockito.when(userRepository.findDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn(
                     Mockito.eq(Set.of(100L)),
-                    Mockito.eq(authenticatedUserId)
-            )).thenReturn(List.of(connectedUser, suggestedUser));
+                    Mockito.eq(Set.of(authenticatedUserId, connectedUserId)),
+                    Mockito.eq(pageable)
+            )).thenReturn(new PageImpl<>(List.of(suggestedUser), pageable, 1));
             Mockito.when(userMapper.toSimpleDTO(suggestedUser)).thenReturn(suggestedDTO);
 
-            List<UserSimpleDTO> result = connectionService.findSuggestions(authenticatedUser.getEmail());
+            Page<UserSimpleDTO> result = connectionService.findSuggestions(authenticatedUser.getEmail(), pageable);
 
-            assertThat(result).containsExactly(suggestedDTO);
-            Mockito.verify(userMapper, Mockito.never()).toSimpleDTO(connectedUser);
+            assertThat(result.getContent()).containsExactly(suggestedDTO);
         }
 
         @Test
         void givenMissingUser_whenFindSuggestions_thenThrowResourceNotFoundException() {
             Mockito.when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+            Pageable pageable = PageRequest.of(0, 10);
 
-            assertThatThrownBy(() -> connectionService.findSuggestions("ghost@test.com"))
+            assertThatThrownBy(() -> connectionService.findSuggestions("ghost@test.com", pageable))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("User not found");
 

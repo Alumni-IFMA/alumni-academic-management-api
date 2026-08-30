@@ -12,6 +12,8 @@ import com.alumni.academic_management_api.mapper.ConnectionMapper;
 import com.alumni.academic_management_api.mapper.UserMapper;
 import com.alumni.academic_management_api.repository.ConnectionRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -131,7 +133,7 @@ public class ConnectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserSimpleDTO> findSuggestions(String authenticatedEmail) {
+    public Page<UserSimpleDTO> findSuggestions(String authenticatedEmail, Pageable pageable) {
         User authenticatedUser = findAuthenticatedUser(authenticatedEmail);
         Long authenticatedUserId = authenticatedUser.getId();
         Set<Long> campusCourseIds = authenticatedUser.getAcademicProfiles()
@@ -142,21 +144,19 @@ public class ConnectionService {
                 .collect(Collectors.toSet());
 
         if (campusCourseIds.isEmpty()) {
-            return List.of();
+            return Page.empty(pageable);
         }
 
-        Set<Long> relatedUserIds = connectionRepository
+        Set<Long> excludedUserIds = connectionRepository
                 .findByRequesterIdOrAddresseeId(authenticatedUserId, authenticatedUserId)
                 .stream()
                 .map(connection -> getOtherUserId(connection, authenticatedUserId))
                 .collect(Collectors.toSet());
+        excludedUserIds.add(authenticatedUserId);
 
         return userRepository
-                .findDistinctByAcademicProfilesCampusCourseIdInAndIdNot(campusCourseIds, authenticatedUserId)
-                .stream()
-                .filter(user -> !relatedUserIds.contains(user.getId()))
-                .map(userMapper::toSimpleDTO)
-                .toList();
+                .findDistinctByAcademicProfilesCampusCourseIdInAndIdNotIn(campusCourseIds, excludedUserIds, pageable)
+                .map(userMapper::toSimpleDTO);
     }
 
     private User findAuthenticatedUser(String email) {

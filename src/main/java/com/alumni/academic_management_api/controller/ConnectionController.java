@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -115,20 +117,20 @@ public class ConnectionController {
     }
 
     @GetMapping("/suggestions")
-    @Operation(summary = "Listar sugestões de conexão")
+    @Operation(summary = "Listar sugestões de conexão", description = "Retorna uma página de sugestões de conexão "
+            + "para o usuário autenticado, com base nos cursos em comum.")
     @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
-            content = @Content(array = @ArraySchema(
-                    schema = @Schema(implementation = UserSimpleDTO.class)))),
+        @ApiResponse(responseCode = "200", description = "Página de sugestões retornada com sucesso"),
         @ApiResponse(responseCode = "401", description = "Não autenticado", content = @Content),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content)
     })
-    public ResponseEntity<List<UserSimpleDTO>> findSuggestions(
-            @AuthenticationPrincipal UserDetails userDetails
+    public ResponseEntity<Page<UserSimpleDTO>> findSuggestions(
+            @AuthenticationPrincipal UserDetails userDetails,
+            Pageable pageable
     ) {
         log.debug("REST request to list connection suggestions");
-        return ResponseEntity.ok(connectionService.findSuggestions(userDetails.getUsername()));
+        return ResponseEntity.ok(connectionService.findSuggestions(userDetails.getUsername(), pageable));
     }
 
     @PatchMapping("/{id}/accept")

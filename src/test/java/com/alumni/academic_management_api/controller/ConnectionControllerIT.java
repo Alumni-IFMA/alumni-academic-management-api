@@ -2,16 +2,25 @@ package com.alumni.academic_management_api.controller;
 
 import com.alumni.academic_management_api.dto.auth.LoginRequestDTO;
 import com.alumni.academic_management_api.dto.connection.ConnectionRequestDTO;
+import com.alumni.academic_management_api.entity.AcademicProfile;
+import com.alumni.academic_management_api.entity.Campus;
+import com.alumni.academic_management_api.entity.CampusCourse;
 import com.alumni.academic_management_api.entity.Connection;
+import com.alumni.academic_management_api.entity.Course;
 import com.alumni.academic_management_api.entity.User;
 import com.alumni.academic_management_api.enums.AccountStatus;
 import com.alumni.academic_management_api.enums.ConnectionStatus;
+import com.alumni.academic_management_api.enums.Level;
+import com.alumni.academic_management_api.enums.Modality;
 import com.alumni.academic_management_api.enums.Role;
+import com.alumni.academic_management_api.repository.AcademicProfileRepository;
+import com.alumni.academic_management_api.repository.CampusesCourseRepository;
 import com.alumni.academic_management_api.repository.ConnectionRepository;
 import com.alumni.academic_management_api.repository.UserRepository;
 import com.alumni.academic_management_api.service.FileStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -59,6 +68,15 @@ class ConnectionControllerIT {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AcademicProfileRepository academicProfileRepository;
+
+    @Autowired
+    private CampusesCourseRepository campusesCourseRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUp() {
@@ -350,6 +368,28 @@ class ConnectionControllerIT {
             mockMvc.perform(get(BASE_URL + "/suggestions")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk());
+        }
+
+        @Test
+        void givenMoreSuggestionsThanPageSize_whenFindSuggestionsWithPageParams_thenReturnRequestedPage()
+                throws Exception {
+            CampusCourse campusCourse = createCampusCourse();
+            User user = createUserWithAcademicProfile("User", "user@test.com", "11111111111", campusCourse);
+            createUserWithAcademicProfile("Suggested1", "suggested1@test.com", "22222222222", campusCourse);
+            createUserWithAcademicProfile("Suggested2", "suggested2@test.com", "33333333333", campusCourse);
+            entityManager.flush();
+            entityManager.clear();
+
+            String token = loginAndGetToken(user.getEmail());
+
+            mockMvc.perform(get(BASE_URL + "/suggestions")
+                            .param("page", "0")
+                            .param("size", "1")
+                            .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(1))
+                    .andExpect(jsonPath("$.totalElements").value(2))
+                    .andExpect(jsonPath("$.totalPages").value(2));
         }
     }
 

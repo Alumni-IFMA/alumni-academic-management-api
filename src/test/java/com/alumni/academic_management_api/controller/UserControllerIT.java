@@ -179,7 +179,11 @@ class UserControllerIT {
         @WithMockUser
         void givenCampusAndCourse_whenSearch_thenReturnOnlyUsersFromThatAcademicProfile() throws Exception {
             Campus campus = Campus.builder().name("Campus Centro").city("São Luís").build();
-            Course course = Course.builder().name("Computação").level(Level.GRADUACAO).modality(Modality.BACHARELADO).build();
+            Course course = Course.builder()
+                    .name("Computação")
+                    .level(Level.GRADUACAO)
+                    .modality(Modality.BACHARELADO)
+                    .build();
             entityManager.persist(campus);
             entityManager.persist(course);
             CampusCourse campusCourse = CampusCourse.builder().campus(campus).course(course).build();
